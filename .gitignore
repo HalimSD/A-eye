@@ -1,3 +1,9 @@
+# pre-trained models
+pretrained_models
+monotonic_align/monotonic_align
+example.png
+generated_voice.wav
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
