@@ -71,9 +71,8 @@ def create_pos_n_neg():
 create_pos_n_neg()
 
 
-
 # COMMAND LINES TO GENERATE POSITIVE IMAGES FOR TRAINING BY PLACING THE POSITIVE IMAGE OVER NEGATIVE IMAGES
 
-# opencv_createsamples -img data/train_data/positives/watches/watch5050_copy.jpg -bg bg.txt -info data/train_data/positives/generated_positives/info.lst -pngoutput data/train_data/positives/generated_positives -maxxangle 0.5 -maxyangle 0.5 -maxzangle 0.5 -num 1950
+# opencv_createsamples -img data/train_data/positives/watch5050.jpg -bg bg.txt -info data/train_data/positives/generated_positives/info.lst -pngoutput data/train_data/positives/generated_positives -maxxangle 0.5 -maxyangle 0.5 -maxzangle 0.5 -num 1950
 # opencv_createsamples -info data/train_data/positives/generated_positives/info.lst -num 1950 -w 20 -h 20 -vec positives.vec
 # opencv_traincascade -data data/train_data/training_cascade -vec positives.vec -bg bg.txt -numPos 1800 -numNeg 900 -numStages 10 -w 20 -h 20
