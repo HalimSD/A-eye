@@ -4,6 +4,8 @@ import cv2
 import joblib
 import numpy as np
 from PIL import Image
+from sklearn.svm import SVC
+from sklearn import metrics
 from skimage.feature import hog
 from sklearn.svm import LinearSVC
 from sklearn.preprocessing import LabelEncoder
@@ -31,10 +33,11 @@ for file in os.listdir(pos_imgs):
             lables_list.append(1)
         except Exception as e:
             print(str(e))
+
 for file in os.listdir(neg_imgs):
     if ".png" in file:
         try:
-            img= Image.open(os.path.join(pos_imgs , file))
+            img= Image.open(os.path.join(neg_imgs , file))
             img = img.convert('L')
             # img = cv2.imread(file, cv2.IMREAD_GRAYSCALE)
             fd = hog(img, orientations = 9, pixels_per_cell=(9, 9), cells_per_block=(2, 2), block_norm='L2', feature_vector=True)
@@ -67,12 +70,39 @@ le = LabelEncoder()
 labels = le.fit_transform(lables_list)
 
 
-(trainData, testData, trainLabels, testLabels) = train_test_split(
-	np.array(features_list), labels, test_size=0.20, random_state=42)
+# (trainData, testData, trainLabels, testLabels) = train_test_split(
+# 	np.array(features_list), labels, test_size=0.20, random_state=42)
 
-model = LinearSVC()
-model.fit(trainData, trainLabels)
-predictions = model.predict(testData)
-print(classification_report(testLabels, predictions))
+# print(len(testLabels))
 
-joblib.dump(model, './models/model_name.npy')
+# model = LinearSVC()
+# model.fit(trainData, trainLabels)
+# predictions = model.predict(testData)
+# print(classification_report(testLabels, predictions))
+# print('Accuracy: ' , metrics.accuracy_score(testLabels, predictions))
+# joblib.dump(model, './models/model_name.npy')
+
+kernels = ['Polynomial', 'RBF', 'Sigmoid','Linear']#A function which returns the corresponding SVC model
+def getClassifier(ktype):
+    if ktype == 0:
+        # Polynomial kernal
+        return SVC(kernel='poly', degree=8, gamma="auto")
+    elif ktype == 1:
+        # Radial Basis Function kernal
+        return SVC(kernel='rbf', gamma="auto")
+    elif ktype == 2:
+        # Sigmoid kernal
+        return SVC(kernel='sigmoid', gamma="auto")
+    elif ktype == 3:
+        # Linear kernal
+        return SVC(kernel='linear', gamma="auto", max_iter = 14000)
+
+for i in range(4):
+    # Separate data into test and training sets
+    X_train, X_test, y_train, y_test = train_test_split(np.array(features_list), labels, test_size = 0.20)# Train a SVC model using different kernal
+    svclassifier = getClassifier(i) 
+    svclassifier.fit(X_train, y_train)# Make prediction
+    joblib.dump(svclassifier, './models/{}_model.npy'.format(i))
+    y_pred = svclassifier.predict(X_test)# Evaluate our model
+    print("Evaluation:", kernels[i], "kernel")
+    print(classification_report(y_test,y_pred))
