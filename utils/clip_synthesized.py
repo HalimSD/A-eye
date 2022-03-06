@@ -5,15 +5,24 @@ from typing import Tuple, List, Union, Optional
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from transformers import GPT2LMHeadModel
+from transformers import GPT2LMHeadModel, GPT2Tokenizer
 from tqdm import trange
 import utils.utils as utils
 from text import text_to_sequence
 import utils.commons as commons
 from text.symbols import symbols
 from models.models import SynthesizerTrn
+import clip 
+import skimage.io as io
+import PIL
+from collections import OrderedDict
 
-clip_model_path = "./pretrained_models/coco_weights.pt"
+WEIGHTS_PATHS = {
+    "conceptual": "./pretrained_models/conceptual_weights.pt"
+}
+weights_path = "./pretrained_models/conceptual_weights.pt"
+# clip_model_path = './conceptual_train/conceptual_prefix-001.pt'
+# "./pretrained_models/conceptual_weights.pt"
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 N = type(None)
@@ -29,7 +38,6 @@ TN = Optional[T]
 TNS = Union[Tuple[TN, ...], List[TN]]
 TSN = Optional[TS]
 TA = Union[T, ARRAY]
-
 
 class MLP(nn.Module):
 
@@ -90,8 +98,9 @@ def generate2(
         prompt=None,
         embed=None,
         entry_count=1,
-        entry_length=67,  # maximum number of words
+        # entry_length=67,  # maximum number of words
         top_p=0.8,
+        entry_length=10,  # maximum number of words
         temperature=1.,
         stop_token: str = '.',
 ):
@@ -103,12 +112,13 @@ def generate2(
     device = next(model.parameters()).device
 
     with torch.no_grad():
-
         for entry_idx in trange(entry_count):
             if embed is not None:
+                print('THERE IS AN EMBED')
                 generated = embed
             else:
                 if tokens is None:
+                    print('THERE IS NOT AN EMBED')
                     tokens = torch.tensor(tokenizer.encode(prompt))
                     tokens = tokens.unsqueeze(0).to(device)
 
@@ -144,21 +154,11 @@ def generate2(
             generated_list.append(output_text)
 
     return generated_list[0]
-CPU = torch.device('cpu')
-state_dict = torch.load(clip_model_path, map_location=CPU)
-# from collections import OrderedDict
-# new_state_dict = OrderedDict()
-# for k, v in state_dict.items():
-#     name = k[:] # remove `module.`
-#     new_state_dict[name] = v
-# load params
-prefix_length = 10
-model = ClipCaptionModel(prefix_length)
-model.load_state_dict(state_dict)
-model = model.eval() 
-model = model.to(device)
+
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 def get_text(text, hps):
+    
     text_norm = text_to_sequence(text, hps.data.text_cleaners)
     if hps.data.add_blank:
         text_norm = commons.intersperse(text_norm, 0)

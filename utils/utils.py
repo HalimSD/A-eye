@@ -9,9 +9,9 @@ import numpy as np
 from scipy.io.wavfile import read
 import torch
 
-MATPLOTLIB_FLAG = False
+MATPLOTLIB_FLAG = True
 
-logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+logging.basicConfig(stream=sys.stdout, level=logging.ERROR)
 logger = logging
 
 
@@ -38,7 +38,7 @@ def load_checkpoint(checkpoint_path, model, optimizer=None):
     model.module.load_state_dict(new_state_dict)
   else:
     model.load_state_dict(new_state_dict)
-  logger.info("Loaded checkpoint '{}' (iteration {})" .format(
+    logger.info("Loaded checkpoint '{}' (iteration {})" .format(
     checkpoint_path, iteration))
   return model, optimizer, learning_rate, iteration
 
@@ -81,7 +81,7 @@ def plot_spectrogram_to_numpy(spectrogram):
     import matplotlib
     matplotlib.use("Agg")
     MATPLOTLIB_FLAG = True
-    mpl_logger = logging.getLogger('matplotlib')
+    mpl_logger = logging.captureWarnings(capture=False) #.getLogger('matplotlib')
     mpl_logger.setLevel(logging.WARNING)
   import matplotlib.pylab as plt
   import numpy as np
