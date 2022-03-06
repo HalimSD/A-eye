@@ -1,4 +1,3 @@
-import io
 import torch
 import clip
 from torch.utils.data import DataLoader, Dataset
@@ -11,10 +10,8 @@ import threading
 import requests
 import shutil
 import PIL
-import json
 from typing import List, Tuple, Optional
 import argparse
-from torchvision.transforms import transforms
 from pathlib import Path
 
 class ConceptualDS(Dataset):
@@ -22,7 +19,7 @@ class ConceptualDS(Dataset):
     @staticmethod
     def get_all_data(data_root: str, suffix: str):
         data = []
-        for i in range(16):
+        for i in range(7):
             out_data_path = f"{data_root}/conceptual_{suffix}_{i:02d}.pkl"
             if os.path.isfile(out_data_path):
                 with open(out_data_path, 'rb') as f:
@@ -49,10 +46,7 @@ class ConceptualDS(Dataset):
         is_error = False
         image = self.dummy
         try:
-            # image = io.imread(image_path)
-            # image  = Image.open(image)
             image = Image.open(image_path) #.resize(224)
-            # image = image.resize(224)
             image = self.preprocess(image)
         except PIL.UnidentifiedImageError:
             is_error = True
@@ -69,7 +63,7 @@ class ConceptualDS(Dataset):
         self.data_root = data_root
         self.data = self.collect(data_root, suffix)
         self.preprocess = preprocess
-        self.dummy = torch.zeros(3, 288, 288)
+        self.dummy = torch.zeros(3, 224, 224)
 
 
 def save_pickle(data, out_path: str, recover_index: Optional[int] = None):
@@ -133,22 +127,18 @@ def download_conceptual(conceptual_root: str, num_threads: int, num_images:int):
     urls = []
     for suffix in ("train","val"):
         if suffix == "train":
-            print(conceptual_root)
-            # print('f"{conceptual_root}"/Train_GCC-training.tsv')
             training_path = os.path.join(conceptual_root, 'Train_GCC-training.tsv')
-            # print())
             with open(training_path) as f:
                 lines = f.readlines()
                 lines = lines[:num_images]
             sub_set_path = '%s/subset_Train_GCC-training.tsv' %(conceptual_root)
-            # 'f{conceptual_root}subset_Train_GCC-training.tsv'
-            print(sub_set_path)
             if not os.path.exists(sub_set_path):
                 myfile = Path(sub_set_path)
                 myfile.touch(exist_ok=True)
             with open(sub_set_path, 'w') as f:
                 for line in lines:
                     f.write(line) 
+
             tsv_path = f"{conceptual_root}/subset_Train_GCC-training.tsv"
         else:
             tsv_path = f"{conceptual_root}/Validation_GCC-1.1.0-Validation.tsv"
@@ -186,15 +176,6 @@ def add_period(caption: str):
         caption = caption[:-2] + '.'
     return caption
 
-def download_subset(num_images):
-    with open('./data/conceptual/Train_GCC-training.tsv') as f:
-        lines = f.readlines()
-        lines = lines[:num_images]
-    with open('./data/conceptual/subset_Train_GCC-training.tsv', 'w') as f:
-        # f.write(lines)
-        for line in lines:
-            f.write(line) 
-
 
 def create_clip_embeddings(conceptual_root: str, clip_model_type: str):
     all_embeddings = []
@@ -202,20 +183,19 @@ def create_clip_embeddings(conceptual_root: str, clip_model_type: str):
     for suffix in ("train", "val"):
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         clip_model, preprocess = clip.load(clip_model_type, device=device, jit=False)
-        # clip_model = clip_model.eval()
+        clip_model = clip_model.eval()
         ds = ConceptualDS(conceptual_root, preprocess, suffix)
-        dl = DataLoader(ds, batch_size=2, shuffle=False, num_workers=8, drop_last=False)
+        dl = DataLoader(ds, batch_size=20, shuffle=False, drop_last=True)
         progress = tqdm(total=len(dl))
         counter = 0
         clip_model_name = clip_model_type.replace('/', '_')
-        out_data_path = f"{conceptual_root}/conceptual_clip_{clip_model_name}_{suffix}.pkl"
+        out_data_path = f"{conceptual_root}/conceptual_{clip_model_name}_{suffix}.pkl"
         recover_index = 0
         for i, data in enumerate(dl):
             images, captions, image_names = data
-            print(images.shape)
             images = images.to(device)
             with torch.no_grad():
-                prefix = clip_model.encode_image(images).cpu()
+                prefix = clip_model.encode_image(images).to(device)
             is_valid = list(map(lambda x: x != "", captions))
             mask = torch.tensor(is_valid)
             all_embeddings.append(prefix[mask])
@@ -234,10 +214,10 @@ def create_clip_embeddings(conceptual_root: str, clip_model_type: str):
     return 0
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_root', default='./data/conceptual')
+    parser.add_argument('--data_root', default='./data/conceptual/test')
     parser.add_argument('--clip_model_type', default="ViT-B/32", choices=('RN50', 'RN101', 'RN50x4', 'ViT-B/32'))
-    parser.add_argument('--num_threads', type=int, default=8)
-    parser.add_argument('--num_images', type=int, default=120000)
+    parser.add_argument('--num_threads', type=int, default=1)
+    parser.add_argument('--num_images', type=int, default=100)
     args = parser.parse_args()
     download_conceptual(args.data_root, args.num_threads, args.num_images)
     create_clip_embeddings(args.data_root, args.clip_model_type)
