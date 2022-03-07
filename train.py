@@ -211,6 +211,9 @@ class TransformerMapper(nn.Module):
         prefix = torch.cat((x, prefix), dim=1)
         out = self.transformer(prefix)[:, self.clip_length:]
         return out
+        
+        #  TransformerMapper(prefix_size, self.gpt_embedding_size, prefix_length,
+        #                                                              clip_length, num_layers)
 
     def __init__(self, dim_clip: int, dim_embedding: int, prefix_length: int, clip_length: int, num_layers: int = 8):
         super(TransformerMapper, self).__init__()
@@ -229,6 +232,7 @@ class ClipCaptionModel(nn.Module):
                 labels: Optional[torch.Tensor] = None):
         embedding_text = self.gpt.transformer.wte(tokens)
         prefix_projections = self.clip_model(prefix).view(-1, self.prefix_length, self.gpt_embedding_size)
+        print(prefix_projections)
         embedding_cat = torch.cat((prefix_projections, embedding_text), dim=1)
         if labels is not None:
             dummy_token = self.get_dummy_token(tokens.shape[0], tokens.device)
@@ -240,6 +244,7 @@ class ClipCaptionModel(nn.Module):
                  num_layers: int = 8, mapping_type: MappingType = MappingType.Transformer.value):
         super(ClipCaptionModel, self).__init__()
         self.prefix_length = prefix_length
+        print(clip_length , "NEW")
         self.clip_length = clip_length
         self.gpt = GPT2LMHeadModel.from_pretrained('gpt2')
         self.gpt_embedding_size = self.gpt.transformer.wte.weight.shape[1]

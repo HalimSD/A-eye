@@ -1,19 +1,55 @@
-from concurrent.futures import thread
-from utils.clip_synthesized import generate2, hps, net_g, get_text, ClipCaptionModel
+import glob
+import cv2
+from utils.clip_synthesized import generate2, hps, net_g, get_text
 import os
 import torch
 import clip
 import cv2 as cv
-# import wavio as wv
 from transformers import GPT2Tokenizer
 from PIL import Image 
 import numpy as np
 import time 
 import sounddevice as sd
-
+import PIL
+from train import ClipCaptionModel, ClipCaptionPrefix
+from collections import OrderedDict
+from PIL import Image
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-weights_path = "./pretrained_models/conceptual_weights.pt"
+weights_root = './conceptual_train'
+checkpoint = ''
+pretrained_model = ''
+w_c=[]
+list_models = glob.glob(f"{weights_root}/*")
+latest_model = max(list_models, key=os.path.getctime)
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+checkpoint = torch.load(os.path.join(latest_model), map_location=device)
+tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+prefix_length = 10
+model = ClipCaptionModel(prefix_length, clip_length=10, prefix_size=512,
+                                num_layers=8, mapping_type='transformer')
+adjusted_checkpoint = OrderedDict()
+for k, v in checkpoint.items():
+    name = k.replace('clip_project', 'clip_model') # remove `module.`
+    adjusted_checkpoint[name] = v
+model.load_state_dict(adjusted_checkpoint)
+clip_model, preproce = clip.load('ViT-B/32', device=device)
+model.eval()
+clip_model.eval()
+model.to(device=device)
+clip_model.to(device=device)
+
+
+def generate_caption(PIL_image ): 
+    start_time = time.time() 
+    with torch.no_grad():
+        image = preproce(PIL_image).unsqueeze(0).to(device)
+        prefix = clip_model.encode_image(image).to(device, dtype=torch.float32)
+        prefix = prefix / prefix.norm(2, -1).item()
+        prefix_embed = model.clip_model(prefix).reshape(1, prefix_length, -1)
+        captopn = generate2(model, tokenizer, embed=prefix_embed)
+    print("--- %s seconds to load model ---" % (time.time() - start_time))
+    return captopn   
 
 def read_caption(caption):
     with torch.no_grad():
@@ -28,30 +64,6 @@ def read_caption(caption):
         # wv.read("generated_voice.wav", audio ,rate=hps.data.sampling_rate, sampwidth=1)
         # wav_obj = sa.WaveObject.from_wave_file("generated_voice.wav")
         # wav_obj.play()).wait_done()
-
-def generate_caption(image):   
-        start_time = time.time()    
-        with torch.no_grad():
-            device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-            clip_model, preprocess = clip.load(
-                "ViT-B/32", device=device, jit=False
-            )
-            image = preprocess(image).unsqueeze(0).to(device)
-            tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
-            prefix_length = 10
-            model = ClipCaptionModel(prefix_length)
-            state_dict = torch.load(weights_path, map_location=device)
-            model.load_state_dict(state_dict)
-            model = model.eval()
-            model = model.to(device)
-            prefix = clip_model.encode_image(image).to(
-                device, dtype=torch.float32
-            )
-            prefix_embed = model.clip_project(prefix).reshape(1, prefix_length, -1)
-            caption = generate2(model, tokenizer, embed=prefix_embed)
-            print("--- %s seconds to generate captions ---" % (time.time() - start_time))
-            return caption
-
 
 def caption ():
     test_data_path = os.path.join(os.getcwd(),'data/conceptual/test')
@@ -70,8 +82,14 @@ def caption ():
         read_caption(caption)
 
     print("--- %s overal time ---" % (time.time() - start_time))
-    if keypress & 0xFF == ord('q'):
-        cv.destroyAllWindows()
-        
-caption()
 
+def screen():
+    cap = cv2.VideoCapture(0)
+    ret,frame = cap.read()
+    frame = PIL.Image.fromarray(frame)
+    return frame
+
+if __name__ == '__main__':
+    image = screen()
+    capt = generate_caption(image)
+    read_caption(capt)
