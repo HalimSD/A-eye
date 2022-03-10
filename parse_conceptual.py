@@ -19,7 +19,7 @@ class ConceptualDS(Dataset):
     @staticmethod
     def get_all_data(data_root: str, suffix: str):
         data = []
-        for i in range(7):
+        for i in range(2):
             out_data_path = f"{data_root}/conceptual_{suffix}_{i:02d}.pkl"
             if os.path.isfile(out_data_path):
                 with open(out_data_path, 'rb') as f:
@@ -183,13 +183,17 @@ def create_clip_embeddings(conceptual_root: str, clip_model_type: str):
     for suffix in ("train", "val"):
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         clip_model, preprocess = clip.load(clip_model_type, device=device, jit=False)
+        # Load proj model
+        print('Load proj model')
+        # model = ClipCaptionPrefix(prefix_length, clip_length=clip_length, \
+        #                                 prefix_size=prefix_size, num_layers=8, mapping_type='transformer')
         clip_model = clip_model.eval()
         ds = ConceptualDS(conceptual_root, preprocess, suffix)
         dl = DataLoader(ds, batch_size=20, shuffle=False, drop_last=True)
         progress = tqdm(total=len(dl))
         counter = 0
         clip_model_name = clip_model_type.replace('/', '_')
-        out_data_path = f"{conceptual_root}/conceptual_{clip_model_name}_{suffix}.pkl"
+        out_data_path = f"{os.path.join(os.getcwd(), 'checkpoints/data_parsed')}/conceptual_{clip_model_name}_{suffix}.pkl"
         recover_index = 0
         for i, data in enumerate(dl):
             images, captions, image_names = data
@@ -214,12 +218,12 @@ def create_clip_embeddings(conceptual_root: str, clip_model_type: str):
     return 0
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_root', default='./data/conceptual/test')
+    parser.add_argument('--data_root', default='./data/conceptual')
     parser.add_argument('--clip_model_type', default="ViT-B/32", choices=('RN50', 'RN101', 'RN50x4', 'ViT-B/32'))
     parser.add_argument('--num_threads', type=int, default=1)
     parser.add_argument('--num_images', type=int, default=100)
     args = parser.parse_args()
-    download_conceptual(args.data_root, args.num_threads, args.num_images)
+    # download_conceptual(args.data_root, args.num_threads, args.num_images)
     create_clip_embeddings(args.data_root, args.clip_model_type)
 
 if __name__ == '__main__':
