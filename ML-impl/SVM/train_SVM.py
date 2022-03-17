@@ -1,6 +1,8 @@
 import pickle
 import random
 import joblib
+import numpy as np
+from sklearn import metrics
 from sklearn.svm import SVC
 from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
@@ -41,4 +43,5 @@ for i in range(4):
     joblib.dump(svclassifier, './models/{}_model.npy'.format(i))
     y_pred = svclassifier.predict(X_test)
     print("Evaluation:", kernels[i], "kernel")
-    print(classification_report(y_test,y_pred))
+    print(classification_report(y_test,y_pred, labels=np.unique(y_pred)))
+    # print(metrics.f1_score(y_test,y_pred, average=None,labels=np.unique(y_pred)))
