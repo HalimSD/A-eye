@@ -1,6 +1,6 @@
 import argparse
 import cv2
-from utils.clip_synthesized import ClipCaptionPrefix, ClipCaptionModel
+from utils.clip_synthesized import ClipCaptionPrefix, ClipCaptionModel, generate_beam
 from utils.clip_synthesized import generate2, hps, net_g, get_text
 import os
 import torch
@@ -19,18 +19,18 @@ import simpleaudio as sa
 from torch.utils.data import Dataset
 from train import ClipCaptionPrefix as transformerClipCaptionPrefix
 from skimage import io
-
+from utils import utils
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
-clip_model, preproce = clip.load('ViT-B/32', device=device)
+clip_model, preprocess = clip.load('ViT-B/32', device=device)
+hps = utils.get_hparams_from_file("./configs/ljs_base.json")
 
 def generate_caption(PIL_image, args: argparse.Namespace, model): 
     start_time = time.time() 
     with torch.no_grad():
-        image = preproce(PIL_image).unsqueeze(0).to(device)
+        image = preprocess(PIL_image).unsqueeze(0).to(device)
         prefix = clip_model.encode_image(image).to(device, dtype=torch.float32)
-        prefix = prefix / prefix.norm(2, -1).item()
-        prefix_embed = model.clip_project(prefix).reshape(1, args.prefix_length, -1)
+        prefix_embed = model.clip_project(prefix).reshape(1, 10, -1)
         captoin = generate2(model, tokenizer, embed=prefix_embed)
     print("--- %s seconds to load model ---" % (time.time() - start_time))
     return captoin   
@@ -69,33 +69,18 @@ def screen():
     frame = PIL.Image.fromarray(frame)
     return frame
 
-def caption_live(model):
-    clip_model, preprocess = clip.load("ViT-B/32", device=device, jit=False)
-    tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+def caption_live(model, args):
     cam = cv.VideoCapture(0)
-
     while True:
-        check, frame = cam.read()
+        _, frame = cam.read()
         cv.imshow('video', frame)
         keypress = cv.waitKey(1000)
         if keypress & 0xFF != ord('q'):
-            with torch.no_grad():
-                pil_image = PIL.Image.fromarray(frame)
-                image = preprocess(pil_image).unsqueeze(0).to(device)
-                prefix = clip_model.encode_image(image).to(device, dtype=torch.float32)
-                prefix_embed = model.clip_project(prefix).reshape(1, 10, -1)
-                caption = generate2(model, tokenizer, embed=prefix_embed)
-                stn_tst = get_text(caption, hps)
-                x_tst = stn_tst.unsqueeze(0)
-                x_tst_lengths = torch.LongTensor([stn_tst.size(0)])
-                audio = net_g.infer(x_tst, x_tst_lengths, noise_scale=.667, noise_scale_w=0.8, length_scale=1)[0][0,0].data.float().numpy()
-                wv.write("generated_voice.wav", audio ,rate=hps.data.sampling_rate, sampwidth=1)
-                wav_obj = sa.WaveObject.from_wave_file("generated_voice.wav")
-                play_obj = wav_obj.play()
-                play_obj.wait_done()
+            pil_image = PIL.Image.fromarray(frame)
+            caption = generate_caption(pil_image, args, model)
+            read_caption(caption)
         elif keypress & 0xFF == ord('q'):
             break
-
     cam.release()
     cv.destroyAllWindows()
 
@@ -138,10 +123,6 @@ def last_model (args: argparse.Namespace):
 def load_checkpoint(args: argparse.Namespace):
     adjusted_checkpoint = OrderedDict()
     latest_model = last_model(args)
-    # prefix_length = 40
-    # clip_length = 40
-    # prefix_size = 640
-    # if args.project:
     if args.project and args.conceptual:
         print('Conceptual project model')
         prefix_length = 40
@@ -240,7 +221,7 @@ def main():
     
     model = load_checkpoint(args)
     # caption_from_device(args, model)
-    caption_live(model)
+    caption_live(model, args)
 
 if __name__ == '__main__':
    main()
