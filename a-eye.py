@@ -77,15 +77,11 @@ def caption_live(model):
     while True:
         check, frame = cam.read()
         cv.imshow('video', frame)
-        keypress = cv.waitKey(1)
-
-        if keypress & 0xFF == ord('q'):
-            break
-        if keypress & 0xFF == ord('c'):
-            cv.imwrite('example.png',frame)
-            pil_image = PIL.Image.fromarray(io.imread('example.png'))
-            image = preprocess(pil_image).unsqueeze(0).to(device)
+        keypress = cv.waitKey(1000)
+        if keypress & 0xFF != ord('q'):
             with torch.no_grad():
+                pil_image = PIL.Image.fromarray(frame)
+                image = preprocess(pil_image).unsqueeze(0).to(device)
                 prefix = clip_model.encode_image(image).to(device, dtype=torch.float32)
                 prefix_embed = model.clip_project(prefix).reshape(1, 10, -1)
                 caption = generate2(model, tokenizer, embed=prefix_embed)
@@ -93,40 +89,15 @@ def caption_live(model):
                 x_tst = stn_tst.unsqueeze(0)
                 x_tst_lengths = torch.LongTensor([stn_tst.size(0)])
                 audio = net_g.infer(x_tst, x_tst_lengths, noise_scale=.667, noise_scale_w=0.8, length_scale=1)[0][0,0].data.float().numpy()
-            wv.write("generated_voice.wav", audio ,rate=hps.data.sampling_rate, sampwidth=1)
-            wav_obj = sa.WaveObject.from_wave_file("generated_voice.wav")
-            play_obj = wav_obj.play()
-            play_obj.wait_done()
+                wv.write("generated_voice.wav", audio ,rate=hps.data.sampling_rate, sampwidth=1)
+                wav_obj = sa.WaveObject.from_wave_file("generated_voice.wav")
+                play_obj = wav_obj.play()
+                play_obj.wait_done()
+        elif keypress & 0xFF == ord('q'):
+            break
 
     cam.release()
     cv.destroyAllWindows()
-
-class MyDataSet(Dataset):
-    def __init__(self, root_dir, files_list, mode='test', transform=None):
-        self.transform = transform
-        self.root_dir = root_dir
-        self.files_list = files_list
-        self.mode = mode
-        if mode == 'test':
-            if 'dog' in files_list[0]:
-                self.label = 1
-            else:
-                self.label = 0
-        
-    def __len__(self):
-        return len(self.files_list)
-    
-    def __getitem__(self, index):
-        image_path = os.path.join(self.root_dir, self.files_list[index])
-        image = Image.open(image_path)
-        if self.transform:
-            image = self.transform(image)
-        if self.mode == 'train':
-            image = np.array(image)
-            return image.astype('float32') , self.label
-        else:
-            image = np.array(image)
-            return image.astype('float32'), self.files_list[index]
 
 WEIGHTS_PATHS = {
 "project_conceptual": 'checkpoints/conceptual_0',
