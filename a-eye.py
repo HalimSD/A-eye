@@ -71,11 +71,13 @@ def screen():
 
 def caption_live(model, args):
     cam = cv.VideoCapture(0)
-    while True:
+    while cam.isOpened():
         _, frame = cam.read()
+        # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         cv.imshow('video', frame)
         keypress = cv.waitKey(1000)
         if keypress & 0xFF != ord('q'):
+            depth_calc(frame)
             pil_image = PIL.Image.fromarray(frame)
             caption = generate_caption(pil_image, args, model)
             read_caption(caption)
@@ -83,6 +85,30 @@ def caption_live(model, args):
             break
     cam.release()
     cv.destroyAllWindows()
+
+def depth_calc(img):
+    midas = torch.hub.load("intel-isl/MiDaS", "DPT_Hybrid")
+    midas.to(device)
+    midas.eval()
+    midas_transforms = torch.hub.load("intel-isl/MiDaS", "transforms")
+    transform = midas_transforms.dpt_transform
+    input_batch = transform(img).to(device)
+    with torch.no_grad():
+        prediction = midas(input_batch)
+        prediction = torch.nn.functional.interpolate(
+            prediction.unsqueeze(1),
+            size=img.shape[:2],
+            mode="bicubic",
+            align_corners=False,
+        ).squeeze()
+    depth_map = prediction.cpu().numpy()
+    depth_map = cv2.normalize(depth_map, None, 0, 1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_64F)
+    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+    depth_map = (depth_map*255).astype(np.uint8)
+    # depth_face = depth_map[int(center_point[1]), int(center_point[0])]
+    depth = -1.7 * depth_map + 2
+    cv2.putText(img, "Depth in cm: " + str(round(depth,2)*100), (50,400), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0,255,0),3)
+
 
 WEIGHTS_PATHS = {
 "project_conceptual": 'checkpoints/conceptual_0',
