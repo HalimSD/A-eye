@@ -20,10 +20,19 @@ from torch.utils.data import Dataset
 from train import ClipCaptionPrefix as transformerClipCaptionPrefix
 from skimage import io
 from utils import utils
+import os
+import glob
+import torch
+import cv2
+import argparse
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
 clip_model, preprocess = clip.load('ViT-B/32', device=device)
 hps = utils.get_hparams_from_file("./configs/ljs_base.json")
+# midas_transforms = torch.hub.load("intel-isl/MiDaS", "transforms")
+# midas = torch.hub.load("intel-isl/MiDaS", "DPT_Hybrid")
+# transform = midas_transforms.dpt_transform
 
 def generate_caption(PIL_image, args: argparse.Namespace, model): 
     start_time = time.time() 
@@ -71,13 +80,11 @@ def screen():
 
 def caption_live(model, args):
     cam = cv.VideoCapture(0)
-    while cam.isOpened():
+    while True:
         _, frame = cam.read()
-        # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         cv.imshow('video', frame)
         keypress = cv.waitKey(1000)
         if keypress & 0xFF != ord('q'):
-            depth_calc(frame)
             pil_image = PIL.Image.fromarray(frame)
             caption = generate_caption(pil_image, args, model)
             read_caption(caption)
@@ -85,29 +92,67 @@ def caption_live(model, args):
             break
     cam.release()
     cv.destroyAllWindows()
+    # cam = cv.VideoCapture(0)
+    # while cam.isOpened():
+    #     _, frame = cam.read()
+    #     # cv.imshow('video', frame)
+    #     start = time.time()
+    #     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    #     input_batch = transform(frame).to(device)
+    #     with torch.no_grad():
+    #         prediction = midas(input_batch)
+    #         prediction = torch.nn.functional.interpolate(
+    #             prediction.unsqueeze(1),
+    #             size=frame.shape[:2],
+    #             mode="bicubic",
+    #             align_corners=False,
+    #         ).squeeze()
+    #     depth_map = prediction.cpu().numpy()
+    #     depth_map = cv2.normalize(depth_map, None, 0, 1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_64F)
+    #     end = time.time()
+    #     totalTime = end - start
+    #     fps = 1 / totalTime
+    #     frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+    #     depth_map = (depth_map*255).astype(np.uint8)
+    #     depth_map = cv2.applyColorMap(depth_map , cv2.COLORMAP_MAGMA)
+    #     cv2.putText(frame, f'FPS: {int(fps)}', (20,70), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0,255,0), 2)
+    #     # cv2.imshow('Image', frame)
+    #     cv2.imshow('Depth Map', depth_map)
+    #         # h, w = frame.shape[:2]
+    #         # center_point = (int(w//2), int(h//2))
+    #         # depth_face = depth_map[int(center_point[1]), int(center_point[0])]
+    #         # depth = -1.7 * depth_face + 2
+    #         # print("Depth in cm: " + str(round(depth,2)*100))
+    #         # depth_calc(frame)
+    #         # pil_image = PIL.Image.fromarray(frame)
+    #         # caption = generate_caption(pil_image, args, model)
+    #         # read_caption(caption)
+    #     keypress = cv.waitKey(1000)
+    #     # if keypress & 0xFF != ord('q'):
+    #     if keypress & 0xFF == ord('q'):
+    #         break
+    # cam.release()
+    # cv.destroyAllWindows()
 
-def depth_calc(img):
-    midas = torch.hub.load("intel-isl/MiDaS", "DPT_Hybrid")
-    midas.to(device)
-    midas.eval()
-    midas_transforms = torch.hub.load("intel-isl/MiDaS", "transforms")
-    transform = midas_transforms.dpt_transform
-    input_batch = transform(img).to(device)
-    with torch.no_grad():
-        prediction = midas(input_batch)
-        prediction = torch.nn.functional.interpolate(
-            prediction.unsqueeze(1),
-            size=img.shape[:2],
-            mode="bicubic",
-            align_corners=False,
-        ).squeeze()
-    depth_map = prediction.cpu().numpy()
-    depth_map = cv2.normalize(depth_map, None, 0, 1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_64F)
-    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-    depth_map = (depth_map*255).astype(np.uint8)
-    # depth_face = depth_map[int(center_point[1]), int(center_point[0])]
-    depth = -1.7 * depth_map + 2
-    cv2.putText(img, "Depth in cm: " + str(round(depth,2)*100), (50,400), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0,255,0),3)
+# def depth_calc(img):
+#     print(f'img.shape = {img.shape}')
+#     input_batch = transform(img).to(device)
+#     with torch.no_grad():
+#         prediction = midas(input_batch)
+#         prediction = torch.nn.functional.interpolate(
+#             prediction.unsqueeze(1),
+#             size=img.shape[:2],
+#             mode="bicubic",
+#             align_corners=False,
+#         ).squeeze()
+#     depth_map = prediction.cpu().numpy()
+#     depth_map = cv2.normalize(depth_map, None, 0, 1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_64F)
+#     depth_map = (depth_map*255).astype(np.uint8)
+#     h, w = img.shape[:2]
+#     center_point = (int(w//2), int(h//2))
+#     depth_face = depth_map[int(center_point[1]), int(center_point[0])]
+#     depth = -1.7 * depth_face + 2
+#     print("Depth in cm: " + str(round(depth,2)*100))
 
 
 WEIGHTS_PATHS = {
@@ -153,17 +198,18 @@ def load_checkpoint(args: argparse.Namespace):
         print('Conceptual project model')
         prefix_length = 40
         clip_length = 40
-        prefix_size = 640
+        prefix_size = 512
         checkpoint = torch.load(latest_model, map_location=device)
         for k, v in checkpoint.items():
-            if 'clip_project' in k:
-                name = k[13:] #.replace( 'clip_model' , 'clip_project') # remove `module.`
+            if 'clip_project.' in k:
+                name = k[13:] # .replace( 'clip_model' , 'clip_project') # remove `module.`
             else:
-                name = 'clip_project' + k
+                name =   k #'clip_model.' +  k
             adjusted_checkpoint[name] = v
+        [print(k) for k,_ in adjusted_checkpoint.items()]
         # [print(k) for k,_ in adjusted_checkpoint.items()]
         model = ClipCaptionModel(prefix_length)
-        model.load_state_dict(checkpoint)
+        model.load_state_dict(adjusted_checkpoint)
         model.eval()
         model.to(device=device)
         return model  
@@ -209,6 +255,8 @@ def load_checkpoint(args: argparse.Namespace):
         model.load_state_dict(checkpoint)
         model.eval()
         model.to(device=device)
+        # midas.to(device)
+        # midas.eval()
         return model  
 
     elif args.transformer and args.pretrained and args.coco:

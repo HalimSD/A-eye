@@ -255,7 +255,7 @@ class ClipCaptionModel(nn.Module):
 class ClipCaptionPrefix(ClipCaptionModel):
 
     def parameters(self, recurse: bool = True):
-        return self.clip_model.parameters()
+        return self.clip_project.parameters()
 
     def train(self, mode: bool = True):
         super(ClipCaptionPrefix, self).train(mode)
@@ -348,7 +348,7 @@ def main():
     parser.add_argument('--data', default='./data/conceptual/conceptual_clip_ViT-B_32_train.pkl')
     parser.add_argument('--out_dir', default='./checkpoints/conceptual_0')
     parser.add_argument('--prefix', default='conceptual', help='prefix for saved filenames')
-    parser.add_argument('--epochs', type=int, default=2)
+    parser.add_argument('--epochs', type=int, default=1)
     parser.add_argument('--save_every', type=int, default=1)
     parser.add_argument('--prefix_length', type=int, default=40)
     parser.add_argument('--prefix_length_clip', type=int, default=40)

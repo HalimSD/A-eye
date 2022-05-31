@@ -18,10 +18,16 @@ ML-impl/cascade_classifier/negative
 ML-impl/cascade_classifier/positive
 ML-impl/cascade_classifier/bg.txt
 ML-impl/SVM/data
-
-
-
-
+ML-impl/SVM/testing.py
+report
+data
+conceptual_train
+train
+_example.png
+checkpoints/
+parse_conceptualcopy.py
+_parsed
+parsed
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
