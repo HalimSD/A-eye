@@ -34,7 +34,7 @@ hps = utils.get_hparams_from_file("./configs/ljs_base.json")
 # midas = torch.hub.load("intel-isl/MiDaS", "DPT_Hybrid")
 # transform = midas_transforms.dpt_transform
 
-def generate_caption(PIL_image, args: argparse.Namespace, model): 
+def generate_caption(PIL_image, model): 
     start_time = time.time() 
     with torch.no_grad():
         image = preprocess(PIL_image).unsqueeze(0).to(device)
