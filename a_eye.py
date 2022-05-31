@@ -58,7 +58,7 @@ def read_caption(caption):
         wav_obj.play().wait_done()
         print("--- %s seconds to read the generated captions ---" % (time.time() - start_time))
 
-def caption_from_device (args: argparse.Namespace, model):
+def caption_from_device (model):
         start_time = time.time()
         test_data_path = os.path.join(os.getcwd(),'data/conceptual/test')
         image_paths = [os.path.join(test_data_path, name) for name in os.listdir(test_data_path) if name[-4] == '.']
@@ -68,7 +68,7 @@ def caption_from_device (args: argparse.Namespace, model):
                 cv.imshow('test', image_cv)
                 keypress = cv.waitKey(1)
                 # model = args.model
-                caption = generate_caption(image, args, model )
+                caption = generate_caption(image, model )
                 read_caption(caption)
         print("--- %s overal time ---" % (time.time() - start_time))
        
@@ -78,7 +78,7 @@ def screen():
     frame = PIL.Image.fromarray(frame)
     return frame
 
-def caption_live(model, args):
+def caption_live(model):
     cam = cv.VideoCapture(0)
     while True:
         _, frame = cam.read()
@@ -86,7 +86,7 @@ def caption_live(model, args):
         keypress = cv.waitKey(1000)
         if keypress & 0xFF != ord('q'):
             pil_image = PIL.Image.fromarray(frame)
-            caption = generate_caption(pil_image, args, model)
+            caption = generate_caption(pil_image, model)
             read_caption(caption)
         elif keypress & 0xFF == ord('q'):
             break
