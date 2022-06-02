@@ -22,7 +22,7 @@ class ConceptualDS(Dataset):
     @staticmethod
     def get_all_data(data_root: str, suffix: str):
         data = []
-        for i in range(2):
+        for i in range(16):
             out_data_path = f"{data_root}/conceptual_{suffix}_{i:02d}.pkl"
             if os.path.isfile(out_data_path):
                 with open(out_data_path, 'rb') as f:
@@ -130,10 +130,10 @@ def thread(urls: List[Tuple[List[str], int]], thread_id: int, progress: tqdm, lo
 
 def download_conceptual(conceptual_root: str, num_threads: int, num_images: int):
     urls = []
-    for suffix in ( "train", "val"):
+    for suffix in ("val", "trains"):
         if suffix == "train":
-            training_path = f"{conceptual_root}/Train_GCC-training.tsv"
-            with open(training_path, 'r') as f:
+            tsv_path = f"{conceptual_root}/Train_GCC-training.tsv"
+            with open(tsv_path, 'r') as f:
                 lines = f.readlines()
                 lines = lines[:num_images]
             train_sub_set_path = f'{conceptual_root}/subset_Train_GCC-training.tsv'
@@ -144,11 +144,12 @@ def download_conceptual(conceptual_root: str, num_threads: int, num_images: int)
                 for line in lines:
                     f.write(line) 
             tsv_path = train_sub_set_path
-        else:
-            val_path = f'{conceptual_root}/Validation_GCC-1.1.0-Validation.tsv'
-            with open(val_path, 'r') as f:
+        elif suffix == "val":
+            tsv_path = f'{conceptual_root}/Validation_GCC-1.1.0-Validation.tsv'
+            with open(tsv_path, 'r') as f:
                 lines = f.readlines()
-                lines = lines[:num_images]
+                indx = num_images//5
+                lines = lines[:indx]
             val_sub_set_path = f'{conceptual_root}/subset_Val_GCC-training.tsv'
             if not os.path.exists(val_sub_set_path):
                 myfile = Path(val_sub_set_path)
@@ -157,10 +158,12 @@ def download_conceptual(conceptual_root: str, num_threads: int, num_images: int)
                 for line in lines:
                     f.write(line) 
             tsv_path = val_sub_set_path
+        else:
+            print("parsing")
         with open(tsv_path) as f:
             read_tsv = csv.reader(f, delimiter="\t")
             for i, row in enumerate(read_tsv):
-                urls.append((row, i))
+                 urls.append((row, i))
         progress = tqdm(total=len(urls))
         if num_threads == 1:
             thread(urls, 0, progress, None, suffix, conceptual_root)
@@ -195,11 +198,11 @@ def add_period(caption: str):
 def create_clip_embeddings(conceptual_root: str, clip_model_type: str):
     all_embeddings = []
     all_captions = []
-    for suffix in ("train", "val"):
+    for suffix in ("train",  "val"):
         clip_model, preprocess = clip.load(clip_model_type, device=device, jit=False)
         clip_model = clip_model.eval()
         ds = ConceptualDS(conceptual_root, preprocess, suffix)
-        dl = DataLoader(ds, batch_size=2, shuffle=False, drop_last=False)
+        dl = DataLoader(ds, batch_size=200, shuffle=False, num_workers=6, drop_last=False)
         progress = tqdm(total=len(dl))
         counter = 0
         clip_model_name = clip_model_type.replace('/', '_')
@@ -209,7 +212,7 @@ def create_clip_embeddings(conceptual_root: str, clip_model_type: str):
             images, captions, image_names = data
             images = images.to(device)
             with torch.no_grad():
-                prefix = clip_model.encode_image(images).to(device)
+                prefix = clip_model.encode_image(images).cpu()
                 # print(f'prefix.shape = {prefix.shape}')
             is_valid = list(map(lambda x: x != "", captions))
             mask = torch.tensor(is_valid)
@@ -233,11 +236,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_root', default='./data/conceptual')
     parser.add_argument('--clip_model_type', default="ViT-B/32", choices=('RN50', 'RN101', 'RN50x4', 'ViT-B/32'))
-    parser.add_argument('--num_threads', type=int, default=1)
+    parser.add_argument('--num_threads', type=int, default=16)
     args = parser.parse_args()
-    download_conceptual(args.data_root, args.num_threads, 100)
+#    download_conceptual(args.data_root, args.num_threads, 200000)
     create_clip_embeddings(args.data_root, args.clip_model_type)
 
 
 if __name__ == '__main__':
     main()
+

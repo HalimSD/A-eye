@@ -26,6 +26,8 @@ import torch
 import cv2
 import argparse
 
+#parser = argparse.ArgumentParser()
+#args = parser.parse_args()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
 clip_model, preprocess = clip.load('ViT-B/32', device=device)
@@ -79,7 +81,7 @@ def screen():
     return frame
 
 def caption_live(model):
-    cam = cv.VideoCapture(0)
+    cam = cv.VideoCapture(1)
     while True:
         _, frame = cam.read()
         cv.imshow('video', frame)
@@ -156,26 +158,27 @@ def caption_live(model):
 
 
 WEIGHTS_PATHS = {
-"project_conceptual": 'checkpoints/conceptual_0',
-'project_coco': 'data/coco',
-"pretrained_conceptual": 'pretrained_models/cons',
-"pretrained_coco": 'pretrained_models',
-"pretrained_coco_transformer": 'pretrained_models/v0_models',
+'project_conceptual': 'data/conceptual_eandb/',
+'project_coco': 'data/coco/',
+'pretrained_conceptual': 'wandb/pretrained_models/',
+'pretrained_coco': 'pretrained_models/',
+'pretrained_coco_transformer': 'pretrained_models/v0_models/',
 }
 
-def last_model (args: argparse.Namespace):
+#args = argparse.Namespace
 
+def last_model (args: argparse.Namespace):
     if args.project and args.coco:
         model_path = WEIGHTS_PATHS.get('project_conceptual')
     elif args.project and args.conceptual:
         model_path = WEIGHTS_PATHS.get('project_conceptual')
-        root_cons_models = os.path.join(model_path)
+       # root_cons_models = os.path.join(model_path)
         list_models_path = os.listdir(root_cons_models)
         weights_list = []
         for weight_path in list_models_path:
             if '.pt' in weight_path:
                 path = os.path.join(root_cons_models, weight_path)
-                print(f'path = {path}')
+        #        print(f'path = {path}')
                 weights_list.append(path) 
         latest_model = max(weights_list, key=os.path.getctime)
         return latest_model
@@ -192,15 +195,20 @@ def last_model (args: argparse.Namespace):
 
 
 def load_checkpoint(args: argparse.Namespace):
+   # parser = argparse.ArgumentParser()
+   # args = parser.parse_args()
+    #arser = argparse.ArgumentParser()
+    #args = argparse.Namespace
     adjusted_checkpoint = OrderedDict()
     latest_model = last_model(args)
     if args.project and args.conceptual:
         print('Conceptual project model')
         prefix_length = 40
         clip_length = 40
-        prefix_size = 512
+        prefix_size = 640 #512
         checkpoint = torch.load(latest_model, map_location=device)
         for k, v in checkpoint.items():
+            [print(k) for k,_ in checkpoint.items()]
             if 'clip_project.' in k:
                 name = k[13:] # .replace( 'clip_model' , 'clip_project') # remove `module.`
             else:
@@ -289,13 +297,14 @@ def main():
     parser.add_argument('--prefix_size', type=int, default=512)
     parser.add_argument('--coco', dest='coco', action="store_true")
     parser.add_argument('--conceptual', dest='conceptual', action="store_true")
-    parser.add_argument('--transformer', dest='transformer', action="store_true")
-
+    parser.add_argument('--transformer', dest='transformer', action="store_true") 
     args = parser.parse_args()
-    
+
     model = load_checkpoint(args)
-    # caption_from_device(args, model)
-    caption_live(model, args)
+    caption_from_device(model)
+    #caption_live(model)
 
 if __name__ == '__main__':
-   main()
+    #parser = argparse.ArgumentParser()
+    #args = parser.parse_args()
+    main()

@@ -238,4 +238,4 @@ net_g = SynthesizerTrn(
     **hps.model)
 _ = net_g.eval()
 
-_ = utils.load_checkpoint("pretrained_models/v0_models/pretrained_ljs.pth", net_g, None)
+_ = utils.load_checkpoint("wandb/pretrained_models/pretrained_ljs.pth", net_g, None)

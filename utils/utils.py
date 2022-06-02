@@ -13,11 +13,11 @@ MATPLOTLIB_FLAG = True
 
 logging.basicConfig(stream=sys.stdout, level=logging.ERROR)
 logger = logging
-
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def load_checkpoint(checkpoint_path, model, optimizer=None):
   assert os.path.isfile(checkpoint_path)
-  checkpoint_dict = torch.load(checkpoint_path, map_location='cpu')
+  checkpoint_dict = torch.load(checkpoint_path, map_location=device)
   iteration = checkpoint_dict['iteration']
   learning_rate = checkpoint_dict['learning_rate']
   if optimizer is not None:
