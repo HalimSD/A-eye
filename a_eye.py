@@ -41,8 +41,9 @@ def generate_caption(PIL_image, model):
     with torch.no_grad():
         image = preprocess(PIL_image).unsqueeze(0).to(device)
         prefix = clip_model.encode_image(image).to(device, dtype=torch.float32)
-        prefix_embed = model.clip_project(prefix).reshape(1, 10, -1)
+        prefix_embed = model.clip_model(prefix).reshape(1, 10, -1)
         captoin = generate2(model, tokenizer, embed=prefix_embed)
+        #print(caption)
     print("--- %s seconds to load model ---" % (time.time() - start_time))
     return captoin   
 
@@ -67,11 +68,12 @@ def caption_from_device (model):
         img_list = [Image.open(image) for image in image_paths]    
         for image in img_list:
                 image_cv = np.array(image)
-                cv.imshow('test', image_cv)
-                keypress = cv.waitKey(1)
+                #cv.imshow('test', image_cv)
+                #keypress = cv.waitKey(1)
                 # model = args.model
                 caption = generate_caption(image, model )
-                read_caption(caption)
+                print(caption)
+                #read_caption(caption)
         print("--- %s overal time ---" % (time.time() - start_time))
        
 def screen():
@@ -173,11 +175,11 @@ def last_model (args: argparse.Namespace):
     elif args.project and args.conceptual:
         model_path = WEIGHTS_PATHS.get('project_conceptual')
        # root_cons_models = os.path.join(model_path)
-        list_models_path = os.listdir(root_cons_models)
+        list_models_path = os.listdir(model_path)
         weights_list = []
         for weight_path in list_models_path:
             if '.pt' in weight_path:
-                path = os.path.join(root_cons_models, weight_path)
+                path = os.path.join(model_path, weight_path)
         #        print(f'path = {path}')
                 weights_list.append(path) 
         latest_model = max(weights_list, key=os.path.getctime)
@@ -193,7 +195,6 @@ def last_model (args: argparse.Namespace):
         assert 'Arguments are not complete'
     
 
-
 def load_checkpoint(args: argparse.Namespace):
    # parser = argparse.ArgumentParser()
    # args = parser.parse_args()
@@ -201,22 +202,24 @@ def load_checkpoint(args: argparse.Namespace):
     #args = argparse.Namespace
     adjusted_checkpoint = OrderedDict()
     latest_model = last_model(args)
+    print(latest_model)
     if args.project and args.conceptual:
         print('Conceptual project model')
         prefix_length = 40
         clip_length = 40
         prefix_size = 640 #512
         checkpoint = torch.load(latest_model, map_location=device)
+        [print(k) for k,_ in checkpoint.items()]
         for k, v in checkpoint.items():
-            [print(k) for k,_ in checkpoint.items()]
-            if 'clip_project.' in k:
-                name = k[13:] # .replace( 'clip_model' , 'clip_project') # remove `module.`
+            if '.linear.' in k:
+                name = k.replace( '.linear.', '.') # remove `module.`
             else:
                 name =   k #'clip_model.' +  k
             adjusted_checkpoint[name] = v
+        print('=========== ADJUSTED ===========')
         [print(k) for k,_ in adjusted_checkpoint.items()]
         # [print(k) for k,_ in adjusted_checkpoint.items()]
-        model = ClipCaptionModel(prefix_length)
+        model = ClipCaptionModel(prefix_size)
         model.load_state_dict(adjusted_checkpoint)
         model.eval()
         model.to(device=device)
