@@ -5,6 +5,8 @@ example.png
 generated_voice.wav
 Image_Labels_Subset_Train_GCC-Labels-training.tsv
 cuda/
+test.py
+trainc.py
 cuda_11.7.0_515.43.04_linux.run
 cuda_11.7.0_515.43.04_linux.runML-impl/cascade_classifier/data
 ML-impl/cascade_classifier/windowcapture.py

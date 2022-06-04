@@ -43,7 +43,7 @@ class MLP(nn.Module):
             if i < len(sizes) - 2:
                 layers.append(act())
         self.model = nn.Sequential(*layers)
-
+        print(f'print from utils clip_syn self.model = {self.model}')
 
 class ClipCaptionModel(nn.Module):
 
@@ -175,13 +175,13 @@ def generate2(
             else:
                 if tokens is None:
                     print('THERE IS NOT AN EMBED')
-                    print(prompt)
+                    #print(prompt)
                     tokens = torch.tensor(tokenizer.encode(prompt))
                     tokens = tokens.unsqueeze(0).to(device)
-                    print(tokens.shape)
+                    #print(tokens.shape)
 
                 generated = model.gpt.transformer.wte(tokens)
-                print(generated.shape)
+                #print(generated.shape)
 
             for i in range(entry_length):
 
@@ -213,9 +213,9 @@ def generate2(
 
             output_list = list(tokens.squeeze().cpu().numpy())
             output_text = tokenizer.decode(output_list)
-            print(f'output_text = {output_text}')
+           # print(f'output_text = {output_text}')
             generated_list.append(output_text)
-            print(f'generated_list = {generated_list}')
+            #print(f'generated_list = {generated_list}')
 
     return generated_list[0]
 
