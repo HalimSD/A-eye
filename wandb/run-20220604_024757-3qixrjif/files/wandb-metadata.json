@@ -1,0 +1,39 @@
+{
+    "os": "Linux-5.4.0-1080-azure-x86_64-with-debian-buster-sid",
+    "python": "3.7.13",
+    "heartbeatAt": "2022-06-04T02:47:58.252947",
+    "startedAt": "2022-06-04T02:47:57.417476",
+    "docker": null,
+    "gpu": "Tesla V100-PCIE-16GB",
+    "gpu_count": 1,
+    "cpu_count": 6,
+    "cuda": null,
+    "args": [
+        "--data",
+        "data/conceptual/conceptual_clip_ViT-B_32_train.pkl",
+        "--out_dir",
+        "data/conceptual_eandb/",
+        "--only_prefix",
+        "--mapping_type",
+        "transformer",
+        "--num_layers",
+        "8",
+        "--prefix_length",
+        "40",
+        "--prefix_length_clip",
+        "40",
+        "--is_rn"
+    ],
+    "state": "running",
+    "program": "train.py",
+    "codePath": "train.py",
+    "git": {
+        "remote": "https://github.com/HalimSD/A-eye.git",
+        "commit": "a727aa0a3d031d430a02fa7754f15d4e50aa27a8"
+    },
+    "email": "maingateway1@gmail.com",
+    "root": "/home/AdminAeye/Desktop/A-eye",
+    "host": "HRA-EYE-VM101",
+    "username": "AdminAeye",
+    "executable": "/anaconda/envs/aeye/bin/python3"
+}
