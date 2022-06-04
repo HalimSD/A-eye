@@ -23,7 +23,10 @@ ML-impl/cascade_classifier/bg.txt
 ML-impl/SVM/data
 ML-impl/SVM/testing.py
 report
-data
+data/*
+cudnn-local-repo-ubuntu1804-8.4.0.27_1.0-1_amd64.deb
+!data/conceptual/test/.gitkeep 
+ML-impl/cascade_classifier/data/
 conceptual_train
 train
 _example.png
