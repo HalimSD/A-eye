@@ -78,10 +78,7 @@ def caption_live(model):
 
 WEIGHTS_PATHS = {
 'project_conceptual': 'data/conceptual_200k_data_parsed',
-'project_coco': 'data/coco/',
 'pretrained_conceptual': 'wandb/pretrained_models/',
-'pretrained_coco': 'pretrained_models/',
-'pretrained_coco_transformer': 'pretrained_models/v0_models/',
 }
 
 def last_model (args: argparse.Namespace):
