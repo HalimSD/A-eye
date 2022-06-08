@@ -1,9 +1,9 @@
 from ast import Tuple
-import nntplib
+import torch.nn as nn
+import torch.nn.functional as nnf
 from pyparsing import Optional
 import torch
 from enum import Enum
-from torch.nn import functional as nn
 
 DROPOUT = 0.2
 
@@ -11,7 +11,7 @@ class MappingType(Enum):
     MLP = 'mlp'
     Transformer = 'transformer'
 
-class MLP(nntplib.Module):
+class MLP(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.model(x)
@@ -26,7 +26,7 @@ class MLP(nntplib.Module):
         self.model = nn.Sequential(*layers)
 
 class MlpTransformer(nn.Module):
-    def __init__(self, in_dim, h_dim, out_d: Optional[int] = None, act=nn.relu, dropout=DROPOUT):
+    def __init__(self, in_dim, h_dim, out_d: Optional[int] = None, act=nnf.relu, dropout=DROPOUT):
         super().__init__()
         out_d = out_d if out_d is not None else in_dim
         self.fc1 = nn.Linear(in_dim, h_dim)
@@ -87,7 +87,7 @@ class TransformerLayer(nn.Module):
         x = x + self.mlp(self.norm2(x))
         return x
 
-    def __init__(self, dim_self, dim_ref, num_heads, mlp_ratio=4., bias=False, dropout=DROPOUT, act=nn.relu,
+    def __init__(self, dim_self, dim_ref, num_heads, mlp_ratio=4., bias=False, dropout=DROPOUT, act=nnf.relu,
                  norm_layer: nn.Module = nn.LayerNorm):
         super().__init__()
         self.norm1 = norm_layer(dim_self)
@@ -115,7 +115,7 @@ class Transformer(nn.Module):
         return x
 
     def __init__(self, dim_self: int, num_heads: int, num_layers: int, dim_ref: Optional[int] = None,
-                 mlp_ratio: float = 2., act=nn.relu, norm_layer: nn.Module = nn.LayerNorm, enc_dec: bool = False):
+                 mlp_ratio: float = 2., act=nnf.relu, norm_layer: nn.Module = nn.LayerNorm, enc_dec: bool = False):
         super(Transformer, self).__init__()
         dim_ref = dim_ref if dim_ref is not None else dim_self
         self.enc_dec = enc_dec
