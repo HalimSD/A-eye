@@ -1,38 +1,25 @@
-import argparse
-import cv2
-from utils.clip_synthesized import ClipCaptionPrefix, ClipCaptionModel, generate_beam
-from utils.clip_synthesized import generate2, hps, net_g, get_text
 import os
+import cv2
 import torch
-import clip
-import cv2 as cv
-from transformers import GPT2Tokenizer
-from PIL import Image 
-import numpy as np
 import time 
-import sounddevice as sd
-import PIL
-from collections import OrderedDict
-from PIL import Image
-import wavio as wv
-import simpleaudio as sa
-from torch.utils.data import Dataset
-from train import ClipCaptionPrefix as transformerClipCaptionPrefix
-from skimage import io
-from utils import utils
-import os
-import glob
-import torch
-import cv2
+import clip
 import argparse
+import wavio as wv
+import PIL
+from PIL import Image
+import sounddevice as sd
+import simpleaudio as sa
+from transformers import GPT2Tokenizer
+from utils.clip_synthesized import ClipCaptionModel, generate2, hps, net_g, get_text
+from train import ClipCaptionPrefix as transformerClipCaptionPrefix
+from utils import utils
+
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
 clip_model, preprocess = clip.load('ViT-B/32', device=device)
 hps = utils.get_hparams_from_file("./configs/ljs_base.json")
-# midas_transforms = torch.hub.load("intel-isl/MiDaS", "transforms")
-# midas = torch.hub.load("intel-isl/MiDaS", "DPT_Hybrid")
-# transform = midas_transforms.dpt_transform
+
 
 def generate_caption(PIL_image, model): 
     start_time = time.time() 
@@ -64,13 +51,8 @@ def caption_from_device (model):
         image_paths = [os.path.join(test_data_path, name) for name in os.listdir(test_data_path) if name[-4] == '.']
         img_list = [Image.open(image) for image in image_paths]    
         for image in img_list:
-                image_cv = np.array(image)
-                #cv.imshow('test', image_cv)
-                #keypress = cv.waitKey(1)
-                # model = args.model
                 caption = generate_caption(image, model )
                 print(caption)
-                #read_caption(caption)
         print("--- %s overal time ---" % (time.time() - start_time))
        
 def screen():
@@ -80,11 +62,11 @@ def screen():
     return frame
 
 def caption_live(model):
-    cam = cv.VideoCapture(1)
+    cam = cv2.VideoCapture(1)
     while True:
         _, frame = cam.read()
-        cv.imshow('video', frame)
-        keypress = cv.waitKey(1000)
+        cv2.imshow('video', frame)
+        keypress = cv2.waitKey(1000)
         if keypress & 0xFF != ord('q'):
             pil_image = PIL.Image.fromarray(frame)
             caption = generate_caption(pil_image, model)
@@ -92,69 +74,7 @@ def caption_live(model):
         elif keypress & 0xFF == ord('q'):
             break
     cam.release()
-    cv.destroyAllWindows()
-    # cam = cv.VideoCapture(0)
-    # while cam.isOpened():
-    #     _, frame = cam.read()
-    #     # cv.imshow('video', frame)
-    #     start = time.time()
-    #     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    #     input_batch = transform(frame).to(device)
-    #     with torch.no_grad():
-    #         prediction = midas(input_batch)
-    #         prediction = torch.nn.functional.interpolate(
-    #             prediction.unsqueeze(1),
-    #             size=frame.shape[:2],
-    #             mode="bicubic",
-    #             align_corners=False,
-    #         ).squeeze()
-    #     depth_map = prediction.cpu().numpy()
-    #     depth_map = cv2.normalize(depth_map, None, 0, 1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_64F)
-    #     end = time.time()
-    #     totalTime = end - start
-    #     fps = 1 / totalTime
-    #     frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-    #     depth_map = (depth_map*255).astype(np.uint8)
-    #     depth_map = cv2.applyColorMap(depth_map , cv2.COLORMAP_MAGMA)
-    #     cv2.putText(frame, f'FPS: {int(fps)}', (20,70), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0,255,0), 2)
-    #     # cv2.imshow('Image', frame)
-    #     cv2.imshow('Depth Map', depth_map)
-    #         # h, w = frame.shape[:2]
-    #         # center_point = (int(w//2), int(h//2))
-    #         # depth_face = depth_map[int(center_point[1]), int(center_point[0])]
-    #         # depth = -1.7 * depth_face + 2
-    #         # print("Depth in cm: " + str(round(depth,2)*100))
-    #         # depth_calc(frame)
-    #         # pil_image = PIL.Image.fromarray(frame)
-    #         # caption = generate_caption(pil_image, args, model)
-    #         # read_caption(caption)
-    #     keypress = cv.waitKey(1000)
-    #     # if keypress & 0xFF != ord('q'):
-    #     if keypress & 0xFF == ord('q'):
-    #         break
-    # cam.release()
-    # cv.destroyAllWindows()
-
-# def depth_calc(img):
-#     print(f'img.shape = {img.shape}')
-#     input_batch = transform(img).to(device)
-#     with torch.no_grad():
-#         prediction = midas(input_batch)
-#         prediction = torch.nn.functional.interpolate(
-#             prediction.unsqueeze(1),
-#             size=img.shape[:2],
-#             mode="bicubic",
-#             align_corners=False,
-#         ).squeeze()
-#     depth_map = prediction.cpu().numpy()
-#     depth_map = cv2.normalize(depth_map, None, 0, 1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_64F)
-#     depth_map = (depth_map*255).astype(np.uint8)
-#     h, w = img.shape[:2]
-#     center_point = (int(w//2), int(h//2))
-#     depth_face = depth_map[int(center_point[1]), int(center_point[0])]
-#     depth = -1.7 * depth_face + 2
-#     print("Depth in cm: " + str(round(depth,2)*100))
-
+    cv2.destroyAllWindows()
 
 WEIGHTS_PATHS = {
 'project_conceptual': 'data/conceptual_200k_data_parsed',
@@ -189,33 +109,24 @@ def last_model (args: argparse.Namespace):
     
 
 def load_checkpoint(args: argparse.Namespace):
-    adjusted_checkpoint = OrderedDict()
     latest_model = last_model(args)
   
     if args.project and args.conceptual:
-        prefix_length = 10
-        clip_length = 10
-        prefix_size = 512 #640 #512
         checkpoint = torch.load(latest_model , map_location='cpu')
-        model = transformerClipCaptionPrefix(prefix_length, prefix_size)
+        model = transformerClipCaptionPrefix(args.prefix_length, args.prefix_size)
         model.load_state_dict(checkpoint)
         model.eval()
         model.to(device=device)
-       return model  
+        return model  
 
     elif args.pretrained and args.conceptual:
         print('Conceptual pretrained model')
-        prefix_length = 10
-        clip_length = 10
-        prefix_size = 512
         model_path = os.path.join(WEIGHTS_PATHS.get('pretrained_conceptual'), 'conceptual_weights.pt')
         checkpoint = torch.load(model_path, map_location=device)
-        model = ClipCaptionModel(prefix_length= prefix_length)
+        model = ClipCaptionModel(args.prefix_length)
         model.load_state_dict(checkpoint)
         model.eval()
         model.to(device=device)
-        # midas.to(device)
-        # midas.eval()
         return model  
 
 def main():
