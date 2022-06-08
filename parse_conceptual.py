@@ -12,27 +12,11 @@ import shutil
 import PIL
 from typing import List, Tuple, Optional
 import argparse
-#from pathlib import Path
 import wandb
-#from transformers import TrainingArguments
 import json
 
-hyperparameter_defaults = dict(
-    #idropout = 0.5,
-    num_threads = 12,
-    #channels_one = 16,
-    num_workers = 6,
-    #channels_two = 32,
-    batch_size = 32,
-    #learning_rate = 0.001,
-    #epochs = 2,
-    )
-#wandb.init(entity= 'halimsd', project="a-eye-project")
-#wandb.config.update(hyperparameter_defaults)
-#config = wandb.config
-#print(f'config = {config}')
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-#device = 'cpu'
+
 class ConceptualDS(Dataset):
 
     @staticmethod
@@ -250,7 +234,15 @@ def main():
     parser.add_argument('--clip_model_type', default='ViT-B/32', choices=('RN50', 'RN101', 'RN50x4', 'ViT-B/32'))
     parser.add_argument('--num_threads', type=int, default=12)
     args = parser.parse_args()
-    
+    hyperparameter_defaults = dict(
+        num_threads = 12,
+        num_workers = 6,
+        batch_size = 32
+        )
+    #wandb.init(entity= 'halimsd', project="a-eye-project")
+    #wandbhyperparameter_defaults = dict(.config.update(hyperparameter_defaults)
+    #config = wandb.config
+    #print(f'config = {config}')
     #training_args = TrainingArguments(output_dir=args.data_root)
     download_conceptual(args.data_root, args.num_threads, 400)
     create_clip_embeddings(args.data_root, args.clip_model_type)

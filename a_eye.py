@@ -26,12 +26,9 @@ import torch
 import cv2
 import argparse
 
-#parser = argparse.ArgumentParser()
-#args = parser.parse_args()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
 clip_model, preprocess = clip.load('ViT-B/32', device=device)
-#print(f'clip_model arch = {clip_model}')
 hps = utils.get_hparams_from_file("./configs/ljs_base.json")
 # midas_transforms = torch.hub.load("intel-isl/MiDaS", "transforms")
 # midas = torch.hub.load("intel-isl/MiDaS", "DPT_Hybrid")
@@ -44,7 +41,6 @@ def generate_caption(PIL_image, model):
         prefix = clip_model.encode_image(image).to(device, dtype=torch.float32)
         prefix_embed = model.clip_project(prefix).reshape(1, 10, -1)
         captoin = generate2(model, tokenizer, embed=prefix_embed)
-        #print(caption)
     print("--- %s seconds to load model ---" % (time.time() - start_time))
     return captoin   
 
@@ -168,20 +164,16 @@ WEIGHTS_PATHS = {
 'pretrained_coco_transformer': 'pretrained_models/v0_models/',
 }
 
-#args = argparse.Namespace
-
 def last_model (args: argparse.Namespace):
     if args.project and args.coco:
         model_path = WEIGHTS_PATHS.get('project_conceptual')
     elif args.project and args.conceptual:
         model_path = WEIGHTS_PATHS.get('project_conceptual')
-       # root_cons_models = os.path.join(model_path)
         list_models_path = os.listdir(model_path)
         weights_list = []
         for weight_path in list_models_path:
             if '.pt' in weight_path:
                 path = os.path.join(model_path, weight_path)
-        #        print(f'path = {path}')
                 weights_list.append(path) 
         latest_model = max(weights_list, key=os.path.getctime)
         return latest_model
@@ -197,67 +189,20 @@ def last_model (args: argparse.Namespace):
     
 
 def load_checkpoint(args: argparse.Namespace):
-   # parser = argparse.ArgumentParser()
-   # args = parser.parse_args()
-    #arser = argparse.ArgumentParser()
-    #args = argparse.Namespace
     adjusted_checkpoint = OrderedDict()
     latest_model = last_model(args)
-  #  print(latest_model)
+  
     if args.project and args.conceptual:
- #       print('Conceptual project model')
         prefix_length = 10
         clip_length = 10
         prefix_size = 512 #640 #512
         checkpoint = torch.load(latest_model , map_location='cpu')
-        #[print(k) for k,_ in checkpoint.items()]
-        for k, v in checkpoint.items():
-            if 'gpt.transformer.ln_f.' in k:
-                name = k.replace( 'gpt.transformer.ln_f.', 'clip_project.') # remove `module.`
-            else:
-                name =   k #'clip_model.' +  k
-            adjusted_checkpoint[name] = v
-#        print('=========== ADJUSTED ===========')
-       # [print(k) for k,_ in checkpoint.items()]
-        # [print(k) for k,_ in adjusted_checkpoint.items()]
         model = transformerClipCaptionPrefix(prefix_length, prefix_size)
-        #print(f'model.load_state_dict() from project conc = {model.load_state_dict()}')
         model.load_state_dict(checkpoint)
         model.eval()
         model.to(device=device)
-       # print(f'model from the clipcaptionmodel = {model}')
-        return model  
+       return model  
 
-    elif args.project and args.coco:
-        print('Coco project model')
-        prefix_length = 40
-        clip_length = 40
-        prefix_size = 640
-        checkpoint = torch.load(latest_model, map_location=device)
-        for k, v in checkpoint.items():
-            name = k.replace( 'clip_model' , 'clip_project') # remove `module.`
-            adjusted_checkpoint[name] = v
-        [print(k) for k,_ in adjusted_checkpoint.items()]
-        model = ClipCaptionModel(prefix_length)
-        model.load_state_dict(adjusted_checkpoint)
-        model.eval()
-        model.to(device=device)
-        return model  
-
-    elif args.pretrained and args.coco and not args.transformer:
-        print('Coco pretrained model')
-        prefix_length = 10
-        clip_length = 10
-        prefix_size = 512
-        model_path = os.path.join(WEIGHTS_PATHS.get('pretrained_coco'), 'coco_weights.pt')
-        checkpoint = torch.load(model_path, map_location=device)
-        model = ClipCaptionModel(prefix_length, prefix_size=prefix_size)
-        model.load_state_dict(checkpoint)
-        model.eval()
-        model.to(device=device)
-        return model  
-
-    # elif args.pretrained:
     elif args.pretrained and args.conceptual:
         print('Conceptual pretrained model')
         prefix_length = 10
@@ -271,25 +216,6 @@ def load_checkpoint(args: argparse.Namespace):
         model.to(device=device)
         # midas.to(device)
         # midas.eval()
-        return model  
-
-    elif args.transformer and args.pretrained and args.coco:
-        print('Transformer based coco pretrained model')
-        prefix_length = 40
-        clip_length = 40
-        prefix_size = 640
-        model_path = os.path.join(WEIGHTS_PATHS.get('pretrained_coco_transformer'), 'transformer_weights.pt')
-        print(model_path)
-        checkpoint = torch.load(model_path, map_location=device)
-        for k,v in checkpoint.items():
-            if 'clip_project' in k:
-                k = k.replace('clip_project', 'clip_model')
-        model = transformerClipCaptionPrefix(prefix_length, clip_length=clip_length, prefix_size=prefix_size,
-                                  num_layers=8, mapping_type='transformer')
-
-        model.load_state_dict(checkpoint)
-        model.eval()
-        model.to(device=device)
         return model  
 
 def main():
@@ -307,11 +233,7 @@ def main():
     args = parser.parse_args()
 
     model = load_checkpoint(args)
-    #print(f'model arch = {model}')
     caption_from_device(model)
-    #caption_live(model)
-
+    
 if __name__ == '__main__':
-    #parser = argparse.ArgumentParser()
-    #args = parser.parse_args()
     main()
