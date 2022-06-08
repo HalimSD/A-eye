@@ -1,7 +1,6 @@
-from ast import Tuple
 import torch.nn as nn
 import torch.nn.functional as nnf
-from pyparsing import Optional
+from typing import Tuple, Optional
 import torch
 from enum import Enum
 

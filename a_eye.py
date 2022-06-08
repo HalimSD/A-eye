@@ -134,7 +134,7 @@ def main():
     parser.add_argument('--ClipCaptionModel', dest='ccm', action="store_true")
     parser.add_argument('--prefix_length', type=int, default=10)
     parser.add_argument('--clip_length', type=int, default=10)
-    parser.add_argument('--prefix_size', type=int, default=640)
+    parser.add_argument('--prefix_size', type=int, default=512)
     parser.add_argument('--coco', dest='coco', action="store_true")
     parser.add_argument('--conceptual', dest='conceptual', action="store_true")
     parser.add_argument('--transformer', dest='transformer', action="store_true") 
