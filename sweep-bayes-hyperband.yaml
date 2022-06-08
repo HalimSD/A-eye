@@ -1,0 +1,9 @@
+method: random,
+batch_size: {
+        # integers between 32 and 256
+        # with evenly-distributed logarithms
+        'distribution': 'q_log_uniform_values',
+        'q': 8,
+        'min': 32,
+        'max': 256,
+      }

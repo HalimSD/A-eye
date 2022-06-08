@@ -31,6 +31,7 @@ import argparse
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
 clip_model, preprocess = clip.load('ViT-B/32', device=device)
+#print(f'clip_model arch = {clip_model}')
 hps = utils.get_hparams_from_file("./configs/ljs_base.json")
 # midas_transforms = torch.hub.load("intel-isl/MiDaS", "transforms")
 # midas = torch.hub.load("intel-isl/MiDaS", "DPT_Hybrid")
@@ -41,7 +42,7 @@ def generate_caption(PIL_image, model):
     with torch.no_grad():
         image = preprocess(PIL_image).unsqueeze(0).to(device)
         prefix = clip_model.encode_image(image).to(device, dtype=torch.float32)
-        prefix_embed = model.clip_model(prefix).reshape(1, 10, -1)
+        prefix_embed = model.clip_project(prefix).reshape(1, 10, -1)
         captoin = generate2(model, tokenizer, embed=prefix_embed)
         #print(caption)
     print("--- %s seconds to load model ---" % (time.time() - start_time))
@@ -160,7 +161,7 @@ def caption_live(model):
 
 
 WEIGHTS_PATHS = {
-'project_conceptual': 'data/conceptual_eandb/',
+'project_conceptual': 'data/conceptual_200k_data_parsed',
 'project_coco': 'data/coco/',
 'pretrained_conceptual': 'wandb/pretrained_models/',
 'pretrained_coco': 'pretrained_models/',
@@ -202,27 +203,29 @@ def load_checkpoint(args: argparse.Namespace):
     #args = argparse.Namespace
     adjusted_checkpoint = OrderedDict()
     latest_model = last_model(args)
-    print(latest_model)
+  #  print(latest_model)
     if args.project and args.conceptual:
-        print('Conceptual project model')
-        prefix_length = 40
-        clip_length = 40
-        prefix_size = 640 #512
-        checkpoint = torch.load(latest_model, map_location=device)
-        [print(k) for k,_ in checkpoint.items()]
+ #       print('Conceptual project model')
+        prefix_length = 10
+        clip_length = 10
+        prefix_size = 512 #640 #512
+        checkpoint = torch.load(latest_model , map_location='cpu')
+        #[print(k) for k,_ in checkpoint.items()]
         for k, v in checkpoint.items():
-            if '.linear.' in k:
-                name = k.replace( '.linear.', '.') # remove `module.`
+            if 'gpt.transformer.ln_f.' in k:
+                name = k.replace( 'gpt.transformer.ln_f.', 'clip_project.') # remove `module.`
             else:
                 name =   k #'clip_model.' +  k
             adjusted_checkpoint[name] = v
-        print('=========== ADJUSTED ===========')
-        [print(k) for k,_ in adjusted_checkpoint.items()]
+#        print('=========== ADJUSTED ===========')
+       # [print(k) for k,_ in checkpoint.items()]
         # [print(k) for k,_ in adjusted_checkpoint.items()]
-        model = ClipCaptionModel(prefix_size)
-        model.load_state_dict(adjusted_checkpoint)
+        model = transformerClipCaptionPrefix(prefix_length, prefix_size)
+        #print(f'model.load_state_dict() from project conc = {model.load_state_dict()}')
+        model.load_state_dict(checkpoint)
         model.eval()
         model.to(device=device)
+       # print(f'model from the clipcaptionmodel = {model}')
         return model  
 
     elif args.project and args.coco:
@@ -297,13 +300,14 @@ def main():
     parser.add_argument('--ClipCaptionModel', dest='ccm', action="store_true")
     parser.add_argument('--prefix_length', type=int, default=10)
     parser.add_argument('--clip_length', type=int, default=10)
-    parser.add_argument('--prefix_size', type=int, default=512)
+    parser.add_argument('--prefix_size', type=int, default=640)
     parser.add_argument('--coco', dest='coco', action="store_true")
     parser.add_argument('--conceptual', dest='conceptual', action="store_true")
     parser.add_argument('--transformer', dest='transformer', action="store_true") 
     args = parser.parse_args()
 
     model = load_checkpoint(args)
+    #print(f'model arch = {model}')
     caption_from_device(model)
     #caption_live(model)
 

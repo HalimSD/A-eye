@@ -1,0 +1,23 @@
+entity: halimsd
+project: a-eye-project
+program: train_invoker.py
+command:
+  - ${env}
+  - python3
+  - train.py
+  - --mapping_type=transformer
+method: grid
+metric:
+  goal: minimize
+  name: loss
+parameters:
+  dropout: 
+    values: [.0, 0.5, 0.8]
+  learning_rate:
+    values: [2e-3, 2e-5, 2e-7]
+  epochs:
+    value:  10
+  batch_size:
+    values : [40, 64, 128] 
+  prefix:
+    value: 'conceptual'

@@ -14,16 +14,30 @@ from typing import Tuple, Optional, Union
 import clip
 import wandb
 import torch.optim as optim
+#from transformers.optimization import ADAMW_APEX_FUSED
+
+hyperparameter_defaults = dict(
+    dropout = 0.5,
+    channels_one = 16,
+    channels_two = 32,
+    batch_size = 100,
+    learning_rate = 0.001,
+    epochs = 2,
+    val_loss = "loss")
+#wandb.init(config= hyperparameter_defaults, project="a-eye-project", entity="halimsd")
+#wandb.config.update(training_args, allow_val_change=True)
+
+config = wandb.config
 
 EPOCHS = 25
 BATCH_SIZE = 32
 DROPOUT = 0.2
 
-#wandb.init(project="a-eye-project", entity="halimsd")
 #wandb.define_metric("loss", summary="min")
 #wandb.define_metric("acc", summary="max")
 #wandb.define_metric("train/step")
 #wandb.define_metric("train/*", step_metric="train/step")
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class ClipCocoDataset(Dataset):
@@ -83,6 +97,15 @@ class ClipCocoDataset(Dataset):
                 max_seq_len = max(max_seq_len, self.captions_tokens[-1].shape[0])
             with open(f"{data_path[:-4]}_tokens.pkl", 'wb') as f:
                 pickle.dump([self.captions_tokens, self.caption2embedding, max_seq_len], f)
+            all_len = torch.tensor([len(self.captions_tokens[i]) for i in range(len(self))]).float()
+            self.max_seq_len = min(int(all_len.mean() + all_len.std() * 10), int(all_len.max()))
+
+            for caption in captions_raw:
+                self.captions_tokens.append(torch.tensor(self.tokenizer.encode(caption['caption']), dtype=torch.int64))
+                self.caption2embedding.append(caption["clip_embedding"])
+                max_seq_len = max(max_seq_len, self.captions_tokens[-1].shape[0])
+            with open(f"{data_path[:-4]}_tokens.pkl", 'wb') as f:
+                pickle.dump([self.captions_tokens, self.caption2embedding, max_seq_len], f)
         all_len = torch.tensor([len(self.captions_tokens[i]) for i in range(len(self))]).float()
         self.max_seq_len = min(int(all_len.mean() + all_len.std() * 10), int(all_len.max()))
 
@@ -97,6 +120,7 @@ class MLP(nn.Module):
 
     def __init__(self, sizes: Tuple[int, ...], bias=True, act=nn.Tanh):
         super(MLP, self).__init__()
+#        print(f'seizes in mlp= {sizes}')
         layers = []
         for i in range(len(sizes) - 1):
             layers.append(nn.Linear(sizes[i], sizes[i + 1], bias=bias))
@@ -235,6 +259,8 @@ class ClipCaptionModel(nn.Module):
     def forward(self, tokens: torch.Tensor, prefix: torch.Tensor, mask: Optional[torch.Tensor] = None,
                 labels: Optional[torch.Tensor] = None):
         embedding_text = self.gpt.transformer.wte(tokens)
+        #print(f'prefix.shape = {prefix.shape}')
+        #print(f'prefix = {prefix}')
         prefix_projections = self.clip_project(prefix).view(-1, self.prefix_length, self.gpt_embedding_size)
         embedding_cat = torch.cat((prefix_projections, embedding_text), dim=1)
         if labels is not None:
@@ -243,20 +269,27 @@ class ClipCaptionModel(nn.Module):
         out = self.gpt(inputs_embeds=embedding_cat, labels=labels, attention_mask=mask)
         return out
 
-    def __init__(self, prefix_length: int, prefix_size: int = 640, clip_length: Optional[int] = None,
+    def __init__(self, prefix_length: int, prefix_size: int, clip_length: Optional[int] = None,
             num_layers: int = 8, mapping_type: MappingType = MappingType.MLP):
         super(ClipCaptionModel, self).__init__()
+        print(f'mapping type= {mapping_type}')
         self.prefix_length = prefix_length
         #self.gpt2config = GPT2Config(n_embd=640) 
-        self.gpt = GPT2LMHeadModel.from_pretrained('gpt2', 
+        self.gpt = GPT2LMHeadModel.from_pretrained('gpt2')
+        #, 
                 #force_download= True,
-                early_stopping = True,    
-                n_embd=768)
+         #       early_stopping = True,    
+          #      n_embd=768)
         
         self.gpt_embedding_size = self.gpt.transformer.wte.weight.shape[1]
+        #print(f'self.gpt_embedding_size= {self.gpt_embedding_size}')
+        #print(f'self.prefix_length= {self.prefix_length}')
+        #print(f'mapping_type= {mapping_type}')
+       # print(f'prefix_size= {prefix_size}')
         if mapping_type == MappingType.MLP:
-            self.clip_project = MLP(prefix_size, (self.gpt_embedding_size * prefix_length) // 2,
-                                     self.gpt_embedding_size * prefix_length)
+         #   print(f'prefix_size which goes to mlp init with value 640, hase the value {prefix_size} in clip_caption_model')
+            self.clip_project = MLP((prefix_size, (self.gpt_embedding_size * prefix_length) // 2,
+                                     self.gpt_embedding_size * prefix_length))
         else:
             self.clip_project = TransformerMapper(prefix_size, self.gpt_embedding_size, prefix_length,
                                                                      clip_length, num_layers)
@@ -270,16 +303,14 @@ class ClipCaptionPrefix(ClipCaptionModel):
     def train(self, mode: bool = True):
         super(ClipCaptionPrefix, self).train(mode)
         self.gpt.eval()
+        #print(f'self= {self}')
         return self
 
 
 def save_config(args: argparse.Namespace):
     config = {}
     for key, item in args._get_kwargs():
-        if key == 'mapping_type':
-            config['mapping_type'] = item
-        else:
-            config[key] = item
+        config[key] = item
     out_path = os.path.join(args.out_dir, f"{args.prefix}.json")
     with open(out_path, 'w') as outfile:
         json.dump(config, outfile)
@@ -304,29 +335,30 @@ def load_model(config_path: str, epoch_or_latest: Union[str, int] = '_latest'):
         print(f"{model_path} is not exist")
     return model, parser
 
-def train(model: ClipCaptionModel, dataset: ClipCocoDataset, training_args: TrainingArguments,
+def train(model: ClipCaptionPrefix, dataset: ClipCocoDataset, args,
         lr: float = 2e-5, warmup_steps: int = 5000, output_dir: str = ".", output_prefix: str = ""):
- #   wandb.init(project=A-eye, notes=args.notes)
-    wandb.init(project="a-eye-project", entity="halimsd")
-    wandb.config.update(training_args)
+    print(f'args from traininf= {args}')
     device = torch.device('cuda:0')
-    batch_size = training_args.per_device_train_batch_size
-    learning_rate = training_args.learning_rate
-    epochs = training_args.num_train_epochs
+    batch_size = args['batch_size']
+    learning_rate = args['learning_rate']
+    epochs= args['epochs']
+    output_prefix = args['prefix']
+    warmup_steps = args['warmup_steps']
+    output_dir = args['out_dir']
+    #print(f'out_dir = {out_dir}')
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
+ #   print(f'model state dict = {model.state_dict()}')
     model = model.to(device)
     model.train()
-    optimizer = training_args.optim
-    #(model.parameters(), lr=learning_rate)
-    #lr = training_args.lr
+    optimizer = torch.optim.AdamW(model.parameters() ,learning_rate)
+
     train_dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, drop_last=True)
     scheduler = get_linear_schedule_with_warmup(
-        optimizer, num_warmup_steps=warmup_steps, num_training_steps=epochs * len(train_dataloader)
+        optimizer, warmup_steps, num_training_steps= epochs * len(train_dataloader)
     )
     wandb.watch(model)
-    best_accuracy = 0
-    # save_config(args)
+    
     for epoch in range(epochs):
         print(f">>> Training epoch {epoch}")
         sys.stdout.flush()
@@ -337,22 +369,19 @@ def train(model: ClipCaptionModel, dataset: ClipCocoDataset, training_args: Trai
             outputs = model(tokens, prefix, mask)
             logits = outputs.logits[:, dataset.prefix_length - 1: -1]
             loss = nnf.cross_entropy(logits.reshape(-1, logits.shape[-1]), tokens.flatten(), ignore_index=0)
-            wandb.config = {
-                "learning_rate": 2e-5,
-                "epochs": epochs,
-                "batch_size": batch_size
-            }
+            
             wandb.log({
-                "loss": loss,
+                "loss": loss.item()})
+       #         "val_loss": config['val_loss']
                 #"train/step": 2 ** epoch,
                 #"train/loss": loss,
                 #"batch": idx
-                })
+     #           })
             loss.backward()
             optimizer.step()
-
             scheduler.step()
             optimizer.zero_grad()
+
             progress.set_postfix({"loss": loss.item()})
             progress.update()
             if (idx + 1) % 10000 == 0:
@@ -361,7 +390,7 @@ def train(model: ClipCaptionModel, dataset: ClipCocoDataset, training_args: Trai
                     os.path.join(output_dir, f"{output_prefix}_latest.pt"),
                 )
         progress.close()
-        if epoch % args.save_every == 0 or epoch == epochs - 1:
+        if epoch % epochs == 0 or epoch == epochs - 1:
             torch.save(
                 model.state_dict(),
                 os.path.join(output_dir, f"{output_prefix}-{epoch:03d}.pt"),
@@ -371,40 +400,40 @@ def train(model: ClipCaptionModel, dataset: ClipCocoDataset, training_args: Trai
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data', default='./data/conceptual/conceptual_clip_ViT-B_32_train.pkl')
-    parser.add_argument('--out_dir', default='./data/conceptual_eandb')
-    parser.add_argument('--prefix', default='conceptual', help='prefix for saved filenames')
-    parser.add_argument('-e', '--epochs', type=int, default=EPOCHS)
-    parser.add_argument('-dout', '--dropout', type=float, default=DROPOUT)
+    parser.add_argument('--data', default='./data/conceptual_200k_data_parsed/conceptual_clip_ViT-B_32_train.pkl')
+    parser.add_argument('--out_dir', default='./data/200k_datapoint_sweep/')
+    parser.add_argument('--prefix', default='ViT_32', help='prefix for saved filenames')
+    parser.add_argument('--epochs', type=int, default=2)
+    parser.add_argument('--dropout', type=float, default=.0)
+    parser.add_argument('--learning_rate', type=float, default=2e-5)
     parser.add_argument('--save_every', type=int, default=1)
-    parser.add_argument('--prefix_length', type=int, default=40)
-    parser.add_argument('--prefix_length_clip', type=int, default=40)
-    parser.add_argument('--bs', type=int, default=10)
+    parser.add_argument('--prefix_length', type=int, default=10)
+    parser.add_argument('--prefix_length_clip', type=int, default=10)
+    parser.add_argument('--batch_size', type=int, default=10)
+    parser.add_argument('--warmup_steps', type=int, default=5)
     parser.add_argument('--only_prefix', dest='only_prefix', action='store_true')
     parser.add_argument('--mapping_type', type=str, default='transformer', help='mlp/transformer')
     parser.add_argument('--num_layers', type=int, default=8)
     parser.add_argument('--is_rn', dest='is_rn', action='store_true')
     parser.add_argument('--normalize_prefix', dest='normalize_prefix', action='store_true')
     args = parser.parse_args()
+    
+
+    wandb.init(project="a-eye-project", entity="halimsd")
+    wandb.config.update(args)
+    config= wandb.config
+      
+    metric = {
+            'name': 'val_loss',
+            'goal': 'minimize',
+            'target': 6            
+        }
+    
     prefix_length = args.prefix_length
-#    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    #clip_model, preproce = clip.load('ViT-B/32', device=device)
     dataset = ClipCocoDataset(args.data, prefix_length, normalize_prefix=args.normalize_prefix)
-    prefix_dim = 512 if args.is_rn else 512
+    prefix_dim = 640 if args.is_rn else 512
     args.mapping_type = {'mlp': MappingType.MLP, 'transformer': MappingType.Transformer}[args.mapping_type]
-  #  wandb.init(project="a-eye-project", entity="HalimSD")
-    # define the training arguments
-    training_args = TrainingArguments(
-        output_dir = './data/conceptual_eandb',
-        num_train_epochs = 3,
-        per_device_train_batch_size = 32,
-        gradient_accumulation_steps = 2,    
-        evaluation_strategy = "epoch",
-        disable_tqdm = False,
-        optim="adamw_torch",# adamw_hf in official docs,
-        learning_rate = 2e-5 
-        #per_device_train_batch_size = 10
-        )
+    
     if args.only_prefix:
         model = ClipCaptionPrefix(prefix_length, clip_length=args.prefix_length_clip, prefix_size=prefix_dim,
                                   num_layers=args.num_layers, mapping_type=args.mapping_type)
@@ -413,20 +442,8 @@ def main():
         model = ClipCaptionModel(prefix_length, clip_length=args.prefix_length_clip, prefix_size=prefix_dim,
                                   num_layers=args.num_layers, mapping_type=args.mapping_type)
         print("Train both prefix and GPT")
-        print(model.config)
         sys.stdout.flush()
-    #config = PretrainedConfig()
-    trainer = Trainer(
-            model=model,
-            args=training_args,
-            #compute_metrics=compute_metrics,
-            train_dataset=dataset,
-            #eval_dataset=test_data
-            
-        )
-    train(model, dataset, training_args)
-    #trainer.evaluate()
-
-
+    
+    train(model, dataset, config)
 if __name__ == '__main__':
     main()

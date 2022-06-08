@@ -211,7 +211,7 @@ def generate2(
                 if stop_token_index == next_token.item():
                     break
 
-            output_list = list(tokens.squeeze().cpu().numpy())
+            output_list = tokens.squeeze().cpu().numpy()
             output_text = tokenizer.decode(output_list)
            # print(f'output_text = {output_text}')
             generated_list.append(output_text)
