@@ -1,0 +1,4 @@
+Make sure you are inside the folder Evaluation
+Download caption_datasets from https://cs.stanford.edu/people/karpathy/deepimagesent/ 
+run the commad line 
+python -m setup --coco_input "caption_datasets/dataset_coco.json" --cxc_input "Evaluation/images/* " --output "caption_datasets\output_1.json"    
