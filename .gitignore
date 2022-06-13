@@ -8,6 +8,16 @@ cuda/
 test.py
 trainc.py
 wandb/*
+client_image_reciver.py
+image_reciever.py
+image_sender.py
+recieve.py
+server_image_reciever.py
+server_image_sender.py
+test1.py
+test2.py
+testcv.py
+
 wandb/
 cuda_11.7.0_515.43.04_linux.run
 cuda_11.7.0_515.43.04_linux.runML-impl/cascade_classifier/data

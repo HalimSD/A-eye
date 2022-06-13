@@ -62,9 +62,10 @@ def screen():
     return frame
 
 def caption_live(model):
-    cam = cv2.VideoCapture(1)
+    cam = cv2.VideoCapture(0)
     while True:
-        _, frame = cam.read()
+        x, frame = cam.read()
+        #print(x, frame)
         cv2.imshow('video', frame)
         keypress = cv2.waitKey(1000)
         if keypress & 0xFF != ord('q'):
@@ -141,6 +142,7 @@ def main():
     args = parser.parse_args()
 
     model = load_checkpoint(args)
+    #caption_live(model) 
     caption_from_device(model)
     
 if __name__ == '__main__':
