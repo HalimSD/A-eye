@@ -1,0 +1,24 @@
+{% extends "base.html" %} {% block title %}Home{% endblock %} {% block content%}
+    <h1>Choose the dataset and the images source</h1>
+    <form class="needs-validation" method="post">
+        <div class="custom-control custom-radio">
+            <input type="radio" id="customRadio1" value="cameracon" name="parms" class="custom-control-input">
+            <label class="custom-control-label" for="customRadio1">Camera + conceptual</label>
+        </div>
+        <div class="custom-control custom-radio">
+            <input type="radio" id="customRadio2" value="cameracoc" name="parms" class="custom-control-input">
+            <label class="custom-control-label" for="customRadio2">Camera + coco</label>
+        </div>
+        <div class="custom-control custom-radio">
+            <input type="radio" id="customRadio3" value="localcon" name="parms" class="custom-control-input">
+            <label class="custom-control-label" for="customRadio3">Local folder + conceptual</label>
+        </div>
+        <div class="custom-control custom-radio">
+            <input type="radio" id="customRadio4" value="localcoc" name="parms" class="custom-control-input">
+            <label class="custom-control-label" for="customRadio4">Local folder + coco</label>
+        </div>
+        <button class="btn btn-primary" type="submit">Submit form</button>
+    </form>
+    
+
+    {% endblock %}
