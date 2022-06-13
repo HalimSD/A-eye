@@ -150,4 +150,4 @@ net_g = SynthesizerTrn(
     **hps.model)
 _ = net_g.eval()
 
-_ = utils.load_checkpoint("C:/Users/saade/Minor/Aeye/pretrained_models/pretrained_ljs.pth", net_g, None)
+_ = utils.load_checkpoint("C:/Users/rahaf/Desktop/A-eye/data/conceptual_200k_data_parse/pretrained_ljs.pth", net_g, None)

@@ -23,7 +23,7 @@ hps = utils.get_hparams_from_file("./configs/ljs_base.json")
 
 
 def generate_caption(PIL_image, model): 
-    print(type(model))
+    # print(type(model))
     start_time = time.time() 
     with torch.no_grad():
         image = preprocess(PIL_image).unsqueeze(0).to(device)
@@ -50,7 +50,7 @@ def read_caption(caption):
 
 def caption_from_device (model):
         start_time = time.time()
-        test_data_path = os.path.join(os.getcwd(),'data\conceptual/test')
+        test_data_path = os.path.join(os.getcwd(),'data\conceptual_200k_data_parse/test')
         image_paths = [os.path.join(test_data_path, name) for name in os.listdir(test_data_path) if name[-4] == '.']
         img_list = [Image.open(image) for image in image_paths]    
         for image in img_list:
@@ -82,7 +82,7 @@ def caption_live(model):
 
 WEIGHTS_PATHS = {
 'project_conceptual': 'data/conceptual_200k_data_parsed',
-'pretrained_conceptual': 'C:/Users/saade/Minor/Aeye/pretrained_models/conceptual'
+'pretrained_conceptual': 'C:/Users/rahaf/Desktop/A-eye/data/conceptual_200k_data_parse'
 }
 
 def last_model (args: argparse.Namespace):
