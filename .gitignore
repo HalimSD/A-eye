@@ -6,6 +6,10 @@ generated_voice.wav
 Image_Labels_Subset_Train_GCC-Labels-training.tsv
 cuda/
 test.py
+image_reciver.py
+image_sender.py
+test1.py
+test2.py
 trainc.py
 wandb/*
 wandb/
