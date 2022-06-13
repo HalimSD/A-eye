@@ -10,7 +10,7 @@ import argparse
 import json
 from typing import Tuple
 import wandb
-from models.transformer_model import MappingType
+#from models.transformer_model import MappingType
 from models.clip_caption_model import ClipCaptionModel, ClipCaptionPrefix
 
 EPOCHS = 25
@@ -149,7 +149,6 @@ def train(model: ClipCaptionPrefix, dataset: ClipCocoDataset, args,
                 os.path.join(output_dir, f"{output_prefix}-{epoch:03d}.pt"),
             )
     return model
-
 
 def main():
     parser = argparse.ArgumentParser()

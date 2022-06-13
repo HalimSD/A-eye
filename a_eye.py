@@ -7,7 +7,7 @@ import argparse
 import wavio as wv
 import PIL
 from PIL import Image
-import sounddevice as sd
+#import sounddevice as sd
 import simpleaudio as sa
 from transformers import GPT2Tokenizer
 from utils.clip_synthesized import ClipCaptionModel, generate2, hps, net_g, get_text
@@ -62,9 +62,10 @@ def screen():
     return frame
 
 def caption_live(model):
-    cam = cv2.VideoCapture(1)
+    cam = cv2.VideoCapture(0)
     while True:
-        _, frame = cam.read()
+        x, frame = cam.read()
+        #print(x, frame)
         cv2.imshow('video', frame)
         keypress = cv2.waitKey(1000)
         if keypress & 0xFF != ord('q'):
@@ -134,14 +135,17 @@ def main():
     parser.add_argument('--ClipCaptionModel', dest='ccm', action="store_true")
     parser.add_argument('--prefix_length', type=int, default=10)
     parser.add_argument('--clip_length', type=int, default=10)
-    parser.add_argument('--prefix_size', type=int, default=640)
+    parser.add_argument('--prefix_size', type=int, default=512)
     parser.add_argument('--coco', dest='coco', action="store_true")
     parser.add_argument('--conceptual', dest='conceptual', action="store_true")
     parser.add_argument('--transformer', dest='transformer', action="store_true") 
     args = parser.parse_args()
 
     model = load_checkpoint(args)
+    #caption_live(model) 
     caption_from_device(model)
+    #caption_live(model)
+
     
 if __name__ == '__main__':
     main()

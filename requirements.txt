@@ -11,6 +11,10 @@
 
 # cd monotonic_align; python setup.py build_ext --inplace
 # cd ..
+________________
+# pip install flask
+# pip install Flask-SQLAlchemy
+# pip install flask-login
 
 attrs==21.4.0
 boto3==1.16.0
