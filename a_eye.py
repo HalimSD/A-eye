@@ -7,7 +7,7 @@ import argparse
 import wavio as wv
 import PIL
 from PIL import Image
-import sounddevice as sd
+#import sounddevice as sd
 import simpleaudio as sa
 from transformers import GPT2Tokenizer
 from utils.clip_synthesized import ClipCaptionModel, generate2, hps, net_g, get_text
@@ -144,6 +144,8 @@ def main():
     model = load_checkpoint(args)
     #caption_live(model) 
     caption_from_device(model)
+    #caption_live(model)
+
     
 if __name__ == '__main__':
     main()
