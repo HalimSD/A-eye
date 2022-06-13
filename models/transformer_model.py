@@ -1,17 +1,8 @@
-<<<<<<< HEAD
-from ast import Tuple
-import torch.nn as nn
-from pyparsing import Optional
-import torch
-from enum import Enum
-from torch.nn import functional as nnf
-=======
 import torch.nn as nn
 import torch.nn.functional as nnf
 from typing import Tuple, Optional
 import torch
 from enum import Enum
->>>>>>> 2e27b7dec3bc6a11f22457b18b5a883c7d0adc15
 
 DROPOUT = 0.2
 
