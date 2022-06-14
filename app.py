@@ -1,8 +1,7 @@
 from flask import Flask, render_template,request,flash,redirect,url_for,session
 import sqlite3
 import argparse
-import click
-from a_eye import WEIGHTS_PATHS,device, caption_from_device, torch, load_checkpoint, ClipCaptionModel,os
+from a_eye import WEIGHTS_PATHS, caption_live,device, caption_from_device, torch, load_checkpoint, ClipCaptionModel,os
 
 
 parser = argparse.ArgumentParser()
@@ -28,9 +27,9 @@ con.close()
 @app.route('/')
 def index():
     return render_template('index.html')
-
-@app.route('/my-link/')
-def my_link():
+# Run a_eye.py --pretrained --conceptual
+@app.route('/pretrained/')
+def pretrained():
   m = load_checkpoint(argparse.Namespace(ccm=False, clip_length=10, coco=False, conceptual=True, live='l', prefix_length=10, prefix_size=512, pretrained=True, project=False, transformer=False))
   caption_from_device(m)
 #   print('Conceptual pretrained model')
@@ -41,6 +40,18 @@ def my_link():
 #   model.eval()
 #   model.to(device=device)
   return 'Conceptual pretrained model'
+@app.route('/project/')
+def project():
+  m = load_checkpoint(argparse.Namespace(ccm=False, clip_length=10, coco=False, conceptual=True, live='l', prefix_length=10, prefix_size=512, pretrained=False, project=True, transformer=False))
+  caption_from_device(m)
+  return 'project conceptual'
+
+# Run a_eye.py --project --conceptual
+@app.route('/live/')
+def live ():
+  m = load_checkpoint(argparse.Namespace(ccm=False, clip_length=10, coco=False, conceptual=True, live='l', prefix_length=10, prefix_size=512, pretrained=False, project=True, transformer=False))
+  caption_live(m)
+  return 'Live conceptual'
 
 @app.route('/login',methods=["GET","POST"])
 def login():

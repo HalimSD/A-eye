@@ -12,7 +12,10 @@
         <div class="col-md-offset-3 col-md-5">
             <h2 class="page-header text-primary text-center">User Page</h2>
             <h3 class="text-success">Welcome : {{session["name"]}}</h3>            
-            <button> <a href="/my-link/">Click me</a></button>
+            <button> <a href="/pretrained/">Run pretrained conceptual</a></button>
+            <button> <a href="/project/">Run project conceptual</a></button>
+            <button> <a href="/live/">Run project live</a></button>
+
             <hr>
             <a href="{{url_for('logout')}}" class="btn btn-primary btn-block">Logout</a>
         </div>

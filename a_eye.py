@@ -50,7 +50,7 @@ def read_caption(caption):
 
 def caption_from_device (model):
         start_time = time.time()
-        test_data_path = os.path.join(os.getcwd(),'data\conceptual_200k_data_parse/test')
+        test_data_path = os.path.join(os.getcwd(),'data\pretrained_weights/test')
         image_paths = [os.path.join(test_data_path, name) for name in os.listdir(test_data_path) if name[-4] == '.']
         img_list = [Image.open(image) for image in image_paths]    
         for image in img_list:
@@ -81,8 +81,8 @@ def caption_live(model):
     cv2.destroyAllWindows()
 
 WEIGHTS_PATHS = {
-'project_conceptual': 'data/conceptual_200k_data_parsed',
-'pretrained_conceptual': 'C:/Users/rahaf/Desktop/A-eye/data/conceptual_200k_data_parse'
+'project_conceptual': './data/project_weights',
+'pretrained_conceptual': './data/pretrained_weights'
 }
 
 def last_model (args: argparse.Namespace):
@@ -146,7 +146,7 @@ def main():
 
     model = load_checkpoint(args)
     print(type(model))
-    #caption_live(model) 
+    # caption_live(model) 
     caption_from_device(model)
     #caption_live(model)
 
