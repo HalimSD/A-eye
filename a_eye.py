@@ -143,8 +143,8 @@ def main():
 
     model = load_checkpoint(args)
     #caption_live(model) 
-    caption_from_device(model)
-    #caption_live(model)
+    #caption_from_device(model)
+    caption_live(model)
 
     
 if __name__ == '__main__':
