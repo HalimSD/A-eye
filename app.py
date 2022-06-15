@@ -1,5 +1,6 @@
 import time
-from flask import Flask, render_template,request,flash,redirect,url_for,session
+import cv2
+from flask import Flask, Response, render_template,request,flash,redirect,url_for,session
 import sqlite3
 import argparse
 from a_eye import Image, caption_live, caption_from_device, generate_caption, load_checkpoint,os
@@ -11,7 +12,18 @@ app.secret_key="123"
 con=sqlite3.connect("database.db")
 con.execute("create table if not exists user(pid integer primary key,name text,mail text)")
 con.close()
-
+# # camera = cv2.VideoCapture(0)
+# def gen_frames():  # generate frame by frame from camera
+#     while True:
+#         # Capture frame-by-frame
+#         success, frame = camera.read()  # read the camera frame
+#         if not success:
+#             break
+#         else:
+#             ret, buffer = cv2.imencode('.jpg', frame)
+#             frame = buffer.tobytes()
+#             yield (b'--frame\r\n'
+#                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')  # concat frame one by one and show result
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -47,13 +59,16 @@ def project():
     return render_template('view.html', result=results)
     
 #   return 'project conceptual'
+# @app.route('/video_feed')
+# def video_feed():
+#     #Video streaming route. Put this in the src attribute of an img tag
+#     return Response(gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 # Run a_eye.py --project --conceptual
 @app.route('/live/')
 def live ():
-  model = load_checkpoint(argparse.Namespace(ccm=False, clip_length=10, coco=False, conceptual=True, live='l', prefix_length=10, prefix_size=512, pretrained=False, project=True, transformer=False))
-  caption_live(model)
-  return 'Live conceptual'
+  model = load_checkpoint(argparse.Namespace(ccm=False, clip_length=10, coco=False, conceptual=True, live='l', prefix_length=10, prefix_size=512, pretrained=False, project=True, transformer=False)) 
+  return Response(caption_live(model), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route('/login',methods=["GET","POST"])
 def login():
