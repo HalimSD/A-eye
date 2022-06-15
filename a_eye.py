@@ -50,7 +50,7 @@ def read_caption(caption):
 
 def caption_from_device (model):
         start_time = time.time()
-        test_data_path = os.path.join(os.getcwd(),'data\pretrained_weights/test')
+        test_data_path = os.path.join(os.getcwd(),'data/test')
         image_paths = [os.path.join(test_data_path, name) for name in os.listdir(test_data_path) if name[-4] == '.']
         img_list = [Image.open(image) for image in image_paths]    
         for image in img_list:
