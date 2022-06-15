@@ -9,14 +9,32 @@
 </head>
 <body>
      <div class="container">
+        <h3 class="text-success">Welcome : {{session["name"]}}</h3>
         <div class="col-md-offset-3 col-md-5">
             <h2 class="page-header text-primary text-center">User Page</h2>
             <h3 class="text-success">Welcome : {{session["name"]}}</h3>            
             <button> <a href="/pretrained/">Run pretrained conceptual</a></button>
             <button> <a href="/project/">Run project conceptual</a></button>
             <button> <a href="/live/">Run project live</a></button>
+           
+            <h3 class="page-header text-primary text-center">Select an image you want the model to recognize</h3>
+
+                {% if filename %}
+            <div>
+                <img src="{{ url_for('static', filename='/Images/'+filename) }}">
+                
+            </div>
+                {% endif %}
+            <form method="post" action="/upload" enctype="multipart/form-data">
+                <p>
+                    <input type="file" name="file" autocomplete="off" required>
+                </p>
+            <p>
+                <input type="submit" value="Submit">
+            </p>
+            </form>
             <hr>
-            <a href="{{url_for('logout')}}" class="btn btn-primary btn-block">Logout</a>
+           
         </div>
      </div>
 </body>
