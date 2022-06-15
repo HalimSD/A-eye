@@ -21,7 +21,7 @@ clip_model, preprocess = clip.load('ViT-B/32', device=device)
 os.path.join(os.path.join(os.getcwd(),'data'), 'test')
 
 WEIGHTS_PATHS = {
-'project_conceptual': Path('data/project_weights/400_imgs'),
+'project_conceptual': Path('data/project_weights'),
 'pretrained_conceptual': Path('data/pretrained_weights/conceptual_weights.pt')
 }
 
