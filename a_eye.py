@@ -7,10 +7,11 @@ import argparse
 import wavio as wv
 import PIL
 from PIL import Image
-import sounddevice as sd
+#import sounddevice as sd
 import simpleaudio as sa
 from transformers import GPT2Tokenizer
-from utils.clip_synthesized import ClipCaptionModel, generate2, hps, net_g, get_text
+from utils.clip_synthesized import generate2, hps, net_g, get_text
+from models.clip_caption_model import ClipCaptionModel
 from train import ClipCaptionPrefix as transformerClipCaptionPrefix
 from utils import utils
 
@@ -22,10 +23,12 @@ hps = utils.get_hparams_from_file("./configs/ljs_base.json")
 
 
 def generate_caption(PIL_image, model): 
+    # print(type(model))
     start_time = time.time() 
     with torch.no_grad():
         image = preprocess(PIL_image).unsqueeze(0).to(device)
         prefix = clip_model.encode_image(image).to(device, dtype=torch.float32)
+        # print(type(prefix))
         prefix_embed = model.clip_project(prefix).reshape(1, 10, -1)
         captoin = generate2(model, tokenizer, embed=prefix_embed)
     print("--- %s seconds to load model ---" % (time.time() - start_time))
@@ -47,12 +50,11 @@ def read_caption(caption):
 
 def caption_from_device (model):
         start_time = time.time()
-        test_data_path = os.path.join(os.getcwd(),'data/conceptual/test')
+        test_data_path = os.path.join(os.getcwd(),'./data/test')
         image_paths = [os.path.join(test_data_path, name) for name in os.listdir(test_data_path) if name[-4] == '.']
         img_list = [Image.open(image) for image in image_paths]    
         for image in img_list:
                 caption = generate_caption(image, model )
-                print(caption)
         print("--- %s overal time ---" % (time.time() - start_time))
        
 def screen():
@@ -62,9 +64,10 @@ def screen():
     return frame
 
 def caption_live(model):
-    cam = cv2.VideoCapture(1)
+    cam = cv2.VideoCapture(0)
     while True:
-        _, frame = cam.read()
+        x, frame = cam.read()
+        #print(x, frame)
         cv2.imshow('video', frame)
         keypress = cv2.waitKey(1000)
         if keypress & 0xFF != ord('q'):
@@ -77,11 +80,8 @@ def caption_live(model):
     cv2.destroyAllWindows()
 
 WEIGHTS_PATHS = {
-'project_conceptual': 'data/conceptual_200k_data_parsed',
-'project_coco': 'data/coco/',
-'pretrained_conceptual': 'wandb/pretrained_models/',
-'pretrained_coco': 'pretrained_models/',
-'pretrained_coco_transformer': 'pretrained_models/v0_models/',
+'project_conceptual': './data/project_weights',
+'pretrained_conceptual': './data/pretrained_weights'
 }
 
 def last_model (args: argparse.Namespace):
@@ -123,7 +123,7 @@ def load_checkpoint(args: argparse.Namespace):
         print('Conceptual pretrained model')
         model_path = os.path.join(WEIGHTS_PATHS.get('pretrained_conceptual'), 'conceptual_weights.pt')
         checkpoint = torch.load(model_path, map_location=device)
-        model = ClipCaptionModel(args.prefix_length)
+        model = ClipCaptionModel(prefix_length = 10, prefix_size = 512)
         model.load_state_dict(checkpoint)
         model.eval()
         model.to(device=device)
@@ -137,14 +137,18 @@ def main():
     parser.add_argument('--ClipCaptionModel', dest='ccm', action="store_true")
     parser.add_argument('--prefix_length', type=int, default=10)
     parser.add_argument('--clip_length', type=int, default=10)
-    parser.add_argument('--prefix_size', type=int, default=640)
+    parser.add_argument('--prefix_size', type=int, default=512)
     parser.add_argument('--coco', dest='coco', action="store_true")
     parser.add_argument('--conceptual', dest='conceptual', action="store_true")
     parser.add_argument('--transformer', dest='transformer', action="store_true") 
     args = parser.parse_args()
 
     model = load_checkpoint(args)
+    print(type(model))
+    # caption_live(model) 
     caption_from_device(model)
+    #caption_live(model)
+
     
 if __name__ == '__main__':
     main()

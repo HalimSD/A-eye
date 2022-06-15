@@ -150,7 +150,6 @@ def train(model: ClipCaptionPrefix, dataset: ClipCocoDataset, args,
             )
     return model
 
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--data', default='./data/conceptual_200k_data_parsed/conceptual_clip_ViT-B_32_train.pkl')
