@@ -11,14 +11,11 @@ import json
 from typing import Tuple
 import wandb
 from models.transformer_model import MappingType
-from models.clip_caption_model import ClipCaptionModel, ClipCaptionPrefix
-
-EPOCHS = 25
-BATCH_SIZE = 32
+from models.clip_caption_model import ClipCaptionModel#, ClipCaptionPrefix
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-class ClipCocoDataset(Dataset):
+class ClipCaptionDataset(Dataset):
 
     def __len__(self) -> int:
         return len(self.captions_tokens)
@@ -48,7 +45,7 @@ class ClipCocoDataset(Dataset):
 
     def __init__(self, data_path: str,  prefix_length: int, gpt2_type: str = "gpt2",
                  normalize_prefix=False):
-        self.tokenizer = GPT2Tokenizer.from_pretrained(gpt2_type)
+        self.tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
 
         self.prefix_length = prefix_length
         self.normalize_prefix = normalize_prefix
@@ -94,10 +91,9 @@ def save_config(args: argparse.Namespace):
     with open(out_path, 'w') as outfile:
         json.dump(config, outfile)
 
-def train(model: ClipCaptionPrefix, dataset: ClipCocoDataset, args,
+def train(model: ClipCaptionModel, dataset: ClipCaptionDataset, args,
         lr: float = 2e-5, warmup_steps: int = 5000, output_dir: str = ".", output_prefix: str = ""):
     
-    device = torch.device('cuda:0')
     batch_size = args['batch_size']
     learning_rate = args['learning_rate']
     epochs= args['epochs']
@@ -152,19 +148,20 @@ def train(model: ClipCaptionPrefix, dataset: ClipCocoDataset, args,
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data', default='./data/conceptual_200k_data_parsed/conceptual_clip_ViT-B_32_train.pkl')
-    parser.add_argument('--out_dir', default='./data/200k_datapoint_sweep/')
-    parser.add_argument('--prefix', default='ViT_32', help='prefix for saved filenames')
+    parser.add_argument('--data', default='./data/conceptual/conceptual_clip_ViT-B_32_train.pkl')
+    parser.add_argument('--out_dir', default='./data/project_weights/400_imgs')
+    parser.add_argument('--prefix', default='conceptual_prefix', help='prefix for saved filenames')
     parser.add_argument('--epochs', type=int, default=2)
     parser.add_argument('--dropout', type=float, default=.0)
     parser.add_argument('--learning_rate', type=float, default=2e-5)
     parser.add_argument('--save_every', type=int, default=1)
     parser.add_argument('--prefix_length', type=int, default=10)
     parser.add_argument('--prefix_length_clip', type=int, default=10)
+    parser.add_argument('--prefix_size', type=int, default=512)
     parser.add_argument('--batch_size', type=int, default=10)
     parser.add_argument('--warmup_steps', type=int, default=5)
     parser.add_argument('--only_prefix', dest='only_prefix', action='store_true')
-    parser.add_argument('--mapping_type', type=str, default='transformer', help='mlp/transformer')
+    parser.add_argument('--mapping_type', type=str, default='mlp', help='mlp/transformer')
     parser.add_argument('--num_layers', type=int, default=8)
     parser.add_argument('--is_rn', dest='is_rn', action='store_true')
     parser.add_argument('--normalize_prefix', dest='normalize_prefix', action='store_true')
@@ -174,28 +171,14 @@ def main():
     wandb.init(project="a-eye-project", entity="halimsd")
     wandb.config.update(args)
     config= wandb.config
-      
-    metric = {
-            'name': 'val_loss',
-            'goal': 'minimize',
-            'target': 6            
-        }
-    
-    prefix_length = args.prefix_length
-    dataset = ClipCocoDataset(args.data, prefix_length, normalize_prefix=args.normalize_prefix)
-    prefix_dim = 640 if args.is_rn else 512
+
+    dataset = ClipCaptionDataset(args.data, args.prefix_length, args.normalize_prefix)
     args.mapping_type = {'mlp': MappingType.MLP, 'transformer': MappingType.Transformer}[args.mapping_type]
-    
-    if args.only_prefix:
-        model = ClipCaptionPrefix(prefix_length, clip_length=args.prefix_length_clip, prefix_size=prefix_dim,
-                                  num_layers=args.num_layers, mapping_type=args.mapping_type)
-        print("Train only prefix")
-    else:
-        model = ClipCaptionModel(prefix_length, clip_length=args.prefix_length_clip, prefix_size=prefix_dim,
-                                  num_layers=args.num_layers, mapping_type=args.mapping_type)
-        print("Train both prefix and GPT")
-        sys.stdout.flush()
-    
+    model = ClipCaptionModel(args.prefix_length, args.prefix_size, args.prefix_length_clip,
+                                args.num_layers, mapping_type=args.mapping_type)
+    print("Train both prefix and GPT")
+    sys.stdout.flush()
+
     train(model, dataset, config)
 if __name__ == '__main__':
     main()
