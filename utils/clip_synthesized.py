@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Tuple, Optional
 import torch
 import torch.nn as nn
@@ -93,4 +94,4 @@ net_g = SynthesizerTrn(
     **hps.model)
 _ = net_g.eval()
 
-_ = utils.load_checkpoint("./data/pretrained_weights/pretrained_ljs.pth", net_g, None)
+_ = utils.load_checkpoint(Path("./data/pretrained_weights/pretrained_ljs.pth"), net_g, None)

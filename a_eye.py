@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import cv2
 import torch
 import time 
@@ -17,11 +18,11 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
 clip_model, preprocess = clip.load('ViT-B/32', device=device)
 
-os.path.join(os.path.join(os.getcwd(),'data'), 'project_weights')
+os.path.join(os.path.join(os.getcwd(),'data'), 'test')
 
 WEIGHTS_PATHS = {
-'project_conceptual': os.path.join(os.path.join(os.getcwd(),'data'), 'project_weights'),
-'pretrained_conceptual': os.path.join(os.path.join(os.getcwd(),'data'), 'pretrained_weights')
+'project_conceptual': Path('data/project_weights/400_imgs'),
+'pretrained_conceptual': Path('data/pretrained_weights')
 }
 
 def generate_caption(PIL_image, model): 
@@ -50,7 +51,7 @@ def read_caption(caption):
 
 def caption_from_device (model):
         start_time = time.time()
-        test_data_path = os.path.join(os.path.join(os.getcwd(),'data'), 'test')
+        test_data_path = Path('data/test')
         image_paths = [os.path.join(test_data_path, name) for name in os.listdir(test_data_path) if name[-4] == '.']
         img_list = [Image.open(image) for image in image_paths]    
         for image in img_list:
