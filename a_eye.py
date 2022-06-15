@@ -22,7 +22,7 @@ os.path.join(os.path.join(os.getcwd(),'data'), 'test')
 
 WEIGHTS_PATHS = {
 'project_conceptual': Path('data/project_weights/400_imgs'),
-'pretrained_conceptual': Path('data/pretrained_weights')
+'pretrained_conceptual': Path('data/pretrained_weights/conceptual_weights.pt')
 }
 
 def generate_caption(PIL_image, model): 
@@ -92,8 +92,9 @@ def last_model (args: argparse.Namespace):
         latest_model = max(weights_list, key=os.path.getctime)
         return latest_model
     elif args.pretrained and args.conceptual:
-        model_path = WEIGHTS_PATHS.get('pretrained_conceptual')
-        return model_path 
+        latest_model = WEIGHTS_PATHS.get('pretrained_conceptual')
+        # latest_model = os.path.join(path)
+        return latest_model 
     else:
         assert 'Arguments are not complete'
     
