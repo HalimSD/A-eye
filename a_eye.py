@@ -72,9 +72,6 @@ def caption_live(model):
         if not x:
                 break
         else:
-        # cv2.imshow('video', frame)
-        # keypress = cv2.waitKey(1000)
-        # if keypress & 0xFF != ord('q'):
             pil_image = PIL.Image.fromarray(frame)
             caption = generate_caption(pil_image, model)
             read_caption(caption)
@@ -82,26 +79,6 @@ def caption_live(model):
             frame = buffer.tobytes()
             yield (b'--frame\r\n'
             b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')  # concat frame one by one and show result
-
-            # pil_image = PIL.Image.fromarray(frame)
-            # caption = generate_caption(pil_image, model)
-            # read_caption(caption)
-#     elif keypress & 0xFF == ord('q'):
-#         break
-# cam.release()
-# cv2.destroyAllWindows()
-
-    # while True:
-    #         # Capture frame-by-frame
-    #         success, frame = camera.read()  # read the camera frame
-    #         if not success:
-    #             break
-    #         else:
-    #             ret, buffer = cv2.imencode('.jpg', frame)
-    #             frame = buffer.tobytes()
-    #             yield (b'--frame\r\n'
-    #                 b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')  # concat frame one by one and show result
-
 
 def last_model (args: argparse.Namespace):
     if args.project and args.conceptual:

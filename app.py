@@ -57,12 +57,6 @@ def project():
             res = res+caption+'\n'
             results = res.replace('\n', '<br>')
     return render_template('view.html', result=results)
-    
-#   return 'project conceptual'
-# @app.route('/video_feed')
-# def video_feed():
-#     #Video streaming route. Put this in the src attribute of an img tag
-#     return Response(gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 # Run a_eye.py --project --conceptual
 @app.route('/live/')
