@@ -1,6 +1,6 @@
 # pre-trained models
 pretrained_models
-monotonic_align/monotonic_align
+monotonic_align
 example.png
 generated_voice.wav
 Image_Labels_Subset_Train_GCC-Labels-training.tsv
