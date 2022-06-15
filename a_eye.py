@@ -26,10 +26,12 @@ WEIGHTS_PATHS = {
 }
 
 def generate_caption(PIL_image, model): 
+    # print(type(model))
     start_time = time.time() 
     with torch.no_grad():
         image = preprocess(PIL_image).unsqueeze(0).to(device)
         prefix = clip_model.encode_image(image).to(device, dtype=torch.float32)
+        # print(type(prefix))
         prefix_embed = model.clip_project(prefix).reshape(1, 10, -1)
         captoin = generate2(model, tokenizer, embed=prefix_embed)
     print("--- %s seconds to load model ---" % (time.time() - start_time))
@@ -137,6 +139,8 @@ def main():
     print(type(model))
     # caption_live(model) 
     caption_from_device(model)
+    #caption_live(model)
+
     
 if __name__ == '__main__':
     main()

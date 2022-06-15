@@ -4,10 +4,12 @@ from flask import Flask, Response, render_template,request,flash,redirect,url_fo
 import sqlite3
 import argparse
 from a_eye import Image, caption_live, caption_from_device, generate_caption, load_checkpoint,os
-
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.secret_key="123"
+
+app.config["IMAGE_UPLOADS"] = "./data/test"
 
 con=sqlite3.connect("database.db")
 con.execute("create table if not exists user(pid integer primary key,name text,mail text)")
@@ -76,6 +78,33 @@ def login():
 @app.route('/user',methods=["GET","POST"])
 def user():
     return render_template("user.html")
+
+@app.route('/upload',methods=["GET","POST"])
+def upload_image():
+	if request.method == "POST":
+		image = request.files['file']
+
+		if image.filename == '':
+			print("Image must have a file name")
+			return redirect(url_for("user"))
+
+
+		filename = secure_filename(image.filename)
+
+		basedir = os.path.abspath(os.path.dirname(__file__))
+		image.save(os.path.join(basedir,app.config["IMAGE_UPLOADS"],filename))
+
+		return render_template('user.html',filename=filename)
+
+
+
+	return render_template('user.html')
+
+
+@app.route('/display/<filename>')
+def display_image(filename):
+	return redirect(url_for('static',filename = "/Images" + filename), code=301)
+
 
 @app.route('/register',methods=['GET','POST'])
 def register():
