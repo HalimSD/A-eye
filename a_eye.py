@@ -92,9 +92,8 @@ def last_model (args: argparse.Namespace):
         latest_model = max(weights_list, key=os.path.getctime)
         return latest_model
     elif args.pretrained and args.conceptual:
-        latest_model = WEIGHTS_PATHS.get('pretrained_conceptual')
-        # latest_model = os.path.join(path)
-        return latest_model 
+        model_path = WEIGHTS_PATHS.get('pretrained_conceptual')
+        return model_path 
     else:
         assert 'Arguments are not complete'
     
