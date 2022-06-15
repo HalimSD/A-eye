@@ -12,18 +12,7 @@ app.secret_key="123"
 con=sqlite3.connect("database.db")
 con.execute("create table if not exists user(pid integer primary key,name text,mail text)")
 con.close()
-# # camera = cv2.VideoCapture(0)
-# def gen_frames():  # generate frame by frame from camera
-#     while True:
-#         # Capture frame-by-frame
-#         success, frame = camera.read()  # read the camera frame
-#         if not success:
-#             break
-#         else:
-#             ret, buffer = cv2.imencode('.jpg', frame)
-#             frame = buffer.tobytes()
-#             yield (b'--frame\r\n'
-#                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')  # concat frame one by one and show result
+
 @app.route('/')
 def index():
     return render_template('index.html')
