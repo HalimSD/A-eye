@@ -26,6 +26,7 @@ ML-impl/cascade_classifier/positive
 ML-impl/cascade_classifier/bg.txt
 ML-impl/SVM/data
 ML-impl/SVM/testing.py
+Evaluation/data/sis_test_raw.csv
 report
 data/*
 wandb
