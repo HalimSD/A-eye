@@ -1,3 +1,4 @@
+from pathlib import Path
 import torch
 import clip
 from torch.utils.data import DataLoader, Dataset
@@ -199,7 +200,7 @@ def create_clip_embeddings(conceptual_root: str, clip_model_type: str):
         clip_model, preprocess = clip.load(clip_model_type, device=device, jit=False)
         clip_model = clip_model.eval()
         ds = ConceptualDS(conceptual_root, preprocess, suffix)
-        dl = DataLoader(ds, batch_size=10, shuffle=False, num_workers=6, drop_last=True)
+        dl = DataLoader(ds, batch_size=10, shuffle=False, num_workers=0, drop_last=True)
         progress = tqdm(total=len(dl))
         counter = 0
         clip_model_name = clip_model_type.replace('/', '_')
@@ -231,20 +232,11 @@ def create_clip_embeddings(conceptual_root: str, clip_model_type: str):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_root', default='./data/conceptual')
-    parser.add_argument('--clip_model_type', default='ViT-B/32', choices=('RN50', 'RN101', 'RN50x4', 'ViT-B/32'))
+    parser.add_argument('--clip_model_type', default='ViT-B/32')
     parser.add_argument('--num_threads', type=int, default=12)
     args = parser.parse_args()
-    hyperparameter_defaults = dict(
-        num_threads = 12,
-        num_workers = 6,
-        batch_size = 32
-        )
-    #wandb.init(entity= 'halimsd', project="a-eye-project")
-    #wandbhyperparameter_defaults = dict(.config.update(hyperparameter_defaults)
-    #config = wandb.config
-    #print(f'config = {config}')
-    #training_args = TrainingArguments(output_dir=args.data_root)
-    download_conceptual(args.data_root, args.num_threads, 400)
+
+    # download_conceptual(args.data_root, args.num_threads, 400)
     create_clip_embeddings(args.data_root, args.clip_model_type)
 
 if __name__ == '__main__':

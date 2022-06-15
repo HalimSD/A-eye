@@ -12,23 +12,21 @@ import simpleaudio as sa
 from transformers import GPT2Tokenizer
 from utils.clip_synthesized import generate2, hps, net_g, get_text
 from models.clip_caption_model import ClipCaptionModel
-from train import ClipCaptionPrefix as transformerClipCaptionPrefix
-from utils import utils
-
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
 clip_model, preprocess = clip.load('ViT-B/32', device=device)
-hps = utils.get_hparams_from_file("./configs/ljs_base.json")
 
+WEIGHTS_PATHS = {
+'project_conceptual': './data/project_weights/400_imgs',
+'pretrained_conceptual': './data/pretrained_weights'
+}
 
 def generate_caption(PIL_image, model): 
-    # print(type(model))
     start_time = time.time() 
     with torch.no_grad():
         image = preprocess(PIL_image).unsqueeze(0).to(device)
         prefix = clip_model.encode_image(image).to(device, dtype=torch.float32)
-        # print(type(prefix))
         prefix_embed = model.clip_project(prefix).reshape(1, 10, -1)
         captoin = generate2(model, tokenizer, embed=prefix_embed)
     print("--- %s seconds to load model ---" % (time.time() - start_time))
@@ -68,7 +66,6 @@ def caption_live(model):
     cam = cv2.VideoCapture(0)
     while True:
         x, frame = cam.read()
-        #print(x, frame)
         cv2.imshow('video', frame)
         keypress = cv2.waitKey(1000)
         if keypress & 0xFF != ord('q'):
@@ -80,15 +77,8 @@ def caption_live(model):
     cam.release()
     cv2.destroyAllWindows()
 
-WEIGHTS_PATHS = {
-'project_conceptual': './data/project_weights',
-'pretrained_conceptual': './data/pretrained_weights'
-}
-
 def last_model (args: argparse.Namespace):
-    if args.project and args.coco:
-        model_path = WEIGHTS_PATHS.get('project_conceptual')
-    elif args.project and args.conceptual:
+    if args.project and args.conceptual:
         model_path = WEIGHTS_PATHS.get('project_conceptual')
         list_models_path = os.listdir(model_path)
         weights_list = []
@@ -100,11 +90,7 @@ def last_model (args: argparse.Namespace):
         return latest_model
     elif args.pretrained and args.conceptual:
         model_path = WEIGHTS_PATHS.get('pretrained_conceptual')
-    elif args.pretrained and args.coco and args.transformer:
-        model_path = WEIGHTS_PATHS.get('pretrained_coco_transformer')
-    elif args.pretrained and args.coco:
-        model_path = WEIGHTS_PATHS.get('pretrained_coco')
-   
+        return model_path 
     else:
         assert 'Arguments are not complete'
     
@@ -113,17 +99,17 @@ def load_checkpoint(args: argparse.Namespace):
     latest_model = last_model(args)
   
     if args.project and args.conceptual:
+        print('LOADING: Conceptual Project')
         checkpoint = torch.load(latest_model , map_location='cpu')
-        model = transformerClipCaptionPrefix(args.prefix_length, args.prefix_size)
+        model = ClipCaptionModel(args.prefix_length, args.prefix_size)
         model.load_state_dict(checkpoint)
         model.eval()
         model.to(device=device)
         return model  
 
     elif args.pretrained and args.conceptual:
-        print('Conceptual pretrained model')
-        model_path = os.path.join(WEIGHTS_PATHS.get('pretrained_conceptual'), 'conceptual_weights.pt')
-        checkpoint = torch.load(model_path, map_location=device)
+        print('LOADING: Conceptual Pretrained')
+        checkpoint = torch.load(latest_model, map_location=device)
         model = ClipCaptionModel(prefix_length = 10, prefix_size = 512)
         model.load_state_dict(checkpoint)
         model.eval()
@@ -148,8 +134,6 @@ def main():
     print(type(model))
     # caption_live(model) 
     caption_from_device(model)
-    #caption_live(model)
-
     
 if __name__ == '__main__':
     main()
