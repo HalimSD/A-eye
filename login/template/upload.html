@@ -1,0 +1,15 @@
+{% extends "base.html" %} {% block title %}Home{% endblock %} {% block content%}
+<div class="container">
+    <div class="row mt-4">
+      <div class="col-sm-6 d-flex justify-content-center">
+        <div class="card">
+          <img class="card-img-top" src="/static/{{image_caption[1]}}" alt="caption">
+          <div class="card-body">
+            <h5 class="card-title">caption predicted : </h5>
+            <p class="card-text">{{image_caption[0]}}</p>
+          </div>
+        </div>
+      </div> 
+    </div>
+  </div>
+{% endblock %}

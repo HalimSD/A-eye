@@ -1,5 +1,5 @@
 {% extends "base.html" %} {% block title %}Home{% endblock %} {% block content%}
-<div class="mt-2" style="width: 25.5em;margin:0 auto;">
+<div class="mt-2" style="width: 26.5em;margin:0 auto;">
     <h3>Choose the images source and the dataset to run the application</h1>
     <form class="needs-validation" method="post">
         <div class="custom-control custom-radio">
@@ -7,18 +7,17 @@
             <label class="custom-control-label" for="customRadio1">Camera + conceptual</label>
         </div>
         <div class="custom-control custom-radio">
-            <input type="radio" id="customRadio2" value="cameracoc" name="parms" class="custom-control-input">
-            <label class="custom-control-label" for="customRadio2">Camera + coco</label>
-        </div>
-        <div class="custom-control custom-radio">
             <input type="radio" id="customRadio3" value="localcon" name="parms" class="custom-control-input">
             <label class="custom-control-label" for="customRadio3">Local folder + conceptual</label>
         </div>
-        <div class="custom-control custom-radio">
-            <input type="radio" id="customRadio4" value="localcoc" name="parms" class="custom-control-input">
-            <label class="custom-control-label" for="customRadio4">Local folder + coco</label>
-        </div>
         <button class="btn btn-primary" type="submit">Submit</button>
+    </form>
+</div>
+<div class="mt-2" style="width: 26.5em;margin:0 auto;">
+    <h1>Or upload a new image</h1>
+    <form action="" method=post enctype=multipart/form-data>
+        <input type=file value="upload"  name=file>
+        <input type=submit name=file value=upload>
     </form>
 </div>
     {% endblock %}

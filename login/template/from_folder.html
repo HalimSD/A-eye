@@ -1,0 +1,19 @@
+{% extends "base.html" %} {% block title %}Home{% endblock %} {% block content%}
+
+<div class="container">
+  <div class="row mt-4">
+    {% for key, value in image_caption.items() %}
+    <div class="col-sm-3">
+      <div class="card">
+        <img class="card-img-top" src="/static/{{key}}" alt="caption">
+        <div class="card-body">
+          <h5 class="card-title">caption predicted : </h5>
+          <p class="card-text">{{value}}</p>
+        </div>
+      </div>
+    </div> 
+  {% endfor %}
+  </div>
+</div>
+
+{% endblock %}

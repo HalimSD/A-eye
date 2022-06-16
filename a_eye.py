@@ -1,3 +1,5 @@
+from csv import list_dialects
+from operator import mod
 import os
 import cv2
 import torch
@@ -13,6 +15,7 @@ from transformers import GPT2Tokenizer
 from utils.clip_synthesized import ClipCaptionModel, generate2, hps, net_g, get_text
 from train import ClipCaptionPrefix as transformerClipCaptionPrefix
 from utils import utils
+import shutil
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -49,11 +52,24 @@ def caption_from_device (model):
         start_time = time.time()
         test_data_path = os.path.join(os.getcwd(),'data/conceptual/test')
         image_paths = [os.path.join(test_data_path, name) for name in os.listdir(test_data_path) if name[-4] == '.']
-        img_list = [Image.open(image) for image in image_paths]    
-        for image in img_list:
-                caption = generate_caption(image, model )
+        #img_list = [Image.open(image) for image in image_paths] 
+        list_caption = {}
+        for name in image_paths:
+                caption = generate_caption(Image.open(name), model )
                 print(caption)
+                list_caption[os.path.split(name)[1]] = caption
+                shutil.copy2(name,os.path.join(os.getcwd(),'login/static'))
+                
         print("--- %s overal time ---" % (time.time() - start_time))
+        return list_caption
+
+def caption_upload (model, path):
+        image_name = os.path.basename(path)
+        if image_name[-4] == '.' :
+            caption = generate_caption(Image.open(path), model)
+            print(caption)
+            list_caption = [caption,image_name]
+        return list_caption
        
 def screen():
     cap = cv2.VideoCapture(0)
@@ -139,13 +155,12 @@ def main():
     parser.add_argument('--coco', dest='coco', action="store_true")
     parser.add_argument('--conceptual', dest='conceptual', action="store_true")
     parser.add_argument('--transformer', dest='transformer', action="store_true") 
+    parser.add_argument('--camera', dest='camera', action="store_true") 
     args = parser.parse_args()
-
+    print(args)
     model = load_checkpoint(args)
-    #caption_live(model) 
-    #caption_from_device(model)
-    caption_live(model)
 
+    caption_live(model) 
     
 if __name__ == '__main__':
     main()

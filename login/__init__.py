@@ -38,6 +38,3 @@ def create_database(app):
     if not path.exists('login/' + DB_NAME):
         db.create_all(app=app)
         print('Created Database!')
-
-    else :
-        print("database is already created")
