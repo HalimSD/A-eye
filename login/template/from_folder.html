@@ -2,13 +2,18 @@
 
 <div class="container">
   <div class="row mt-4">
-    {% for key, value in image_caption.items() %}
+    {% for image in image_caption %}
     <div class="col-sm-3">
       <div class="card">
-        <img class="card-img-top" src="/static/{{key}}" alt="caption">
+        <img class="card-img-top" src="/static/{{image[0]}}" alt="caption">
         <div class="card-body">
           <h5 class="card-title">caption predicted : </h5>
-          <p class="card-text">{{value}}</p>
+          <p class="card-text">{{image[1]}}</p>
+        </div>
+        <div>
+          <audio controls>
+            <source src="/static/{{image[2]}}"type="audio/wav" style="width: 600px;">
+          </audio>
         </div>
       </div>
     </div> 

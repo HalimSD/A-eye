@@ -2,6 +2,7 @@ from csv import list_dialects
 from operator import mod
 import os
 import cv2
+from numpy import imag
 import torch
 import time 
 import clip
@@ -42,7 +43,6 @@ def read_caption(caption):
         x_tst_lengths = torch.LongTensor([stn_tst.size(0)])
         audio = net_g.infer(x_tst, x_tst_lengths, noise_scale=.667, noise_scale_w=0.8, length_scale=1)[0][0,0].data.float().numpy()
         # sd.play(audio, blocking=True, samplerate=hps.data.sampling_rate)
-        
         wv.write("generated_voice.wav", audio ,rate=hps.data.sampling_rate, sampwidth=1)
         wav_obj = sa.WaveObject.from_wave_file("generated_voice.wav")
         wav_obj.play().wait_done()
@@ -53,12 +53,21 @@ def caption_from_device (model):
         test_data_path = os.path.join(os.getcwd(),'data/conceptual/test')
         image_paths = [os.path.join(test_data_path, name) for name in os.listdir(test_data_path) if name[-4] == '.']
         #img_list = [Image.open(image) for image in image_paths] 
-        list_caption = {}
+        list_caption = []
         for name in image_paths:
                 caption = generate_caption(Image.open(name), model )
-                print(caption)
-                list_caption[os.path.split(name)[1]] = caption
                 shutil.copy2(name,os.path.join(os.getcwd(),'login/static'))
+                with torch.no_grad():
+                    stn_tst = get_text(caption, hps)
+                    x_tst = stn_tst.unsqueeze(0)
+                    x_tst_lengths = torch.LongTensor([stn_tst.size(0)])
+                    audio = net_g.infer(x_tst, x_tst_lengths, noise_scale=.667, noise_scale_w=0.8, length_scale=1)[0][0,0].data.float().numpy()
+                    audio_name = os.path.splitext(os.path.basename(name))[0]+'.wav'
+                    audio_path = os.path.join(os.path.join(os.getcwd(),'login/static'), audio_name)
+                    wv.write(audio_path, audio ,rate=hps.data.sampling_rate, sampwidth=1)
+                #list_caption[os.path.split(name)[1]] = caption
+                list_caption.append([os.path.split(name)[1],caption, audio_name]) 
+                print(list_caption)
                 
         print("--- %s overal time ---" % (time.time() - start_time))
         return list_caption
@@ -67,8 +76,15 @@ def caption_upload (model, path):
         image_name = os.path.basename(path)
         if image_name[-4] == '.' :
             caption = generate_caption(Image.open(path), model)
-            print(caption)
-            list_caption = [caption,image_name]
+            with torch.no_grad():
+                stn_tst = get_text(caption, hps)
+                x_tst = stn_tst.unsqueeze(0)
+                x_tst_lengths = torch.LongTensor([stn_tst.size(0)])
+                audio = net_g.infer(x_tst, x_tst_lengths, noise_scale=.667, noise_scale_w=0.8, length_scale=1)[0][0,0].data.float().numpy()
+                audio_path = os.path.splitext(path)[0]+'.wav'
+                print(audio_path)
+                wv.write(audio_path, audio ,rate=hps.data.sampling_rate, sampwidth=1)
+            list_caption = [caption,image_name, os.path.basename(audio_path)]
         return list_caption
        
 def screen():
@@ -87,6 +103,7 @@ def caption_live(model):
         if keypress & 0xFF != ord('q'):
             pil_image = PIL.Image.fromarray(frame)
             caption = generate_caption(pil_image, model)
+            print(caption)
             read_caption(caption)
         elif keypress & 0xFF == ord('q'):
             break

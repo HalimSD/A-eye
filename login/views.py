@@ -28,7 +28,6 @@ def home():
                 imagename = secure_filename(image.filename)
                 print(imagename)
                 path = os.path.join(os.getcwd(),'login/static',imagename)
-                print(path)
                 image.save(path)
                 return redirect(url_for('views.upload',path=path)) 
 
