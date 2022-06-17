@@ -9,7 +9,7 @@ from werkzeug.utils import secure_filename
 app = Flask(__name__)
 app.secret_key="123"
 
-app.config["IMAGE_UPLOADS"] = "./data/test"
+app.config["IMAGE_UPLOADS"] = "./static/test"
 
 con=sqlite3.connect("database.db")
 con.execute("create table if not exists user(pid integer primary key,name text,mail text)")
@@ -23,31 +23,45 @@ def index():
 def pretrained():
     model = load_checkpoint(argparse.Namespace(ccm=False, clip_length=10, coco=False, conceptual=True, live='l', prefix_length=10, prefix_size=512, pretrained=True, project=False, transformer=False))
 #   caption_from_device(m)
-    test_data_path = os.path.join(os.getcwd(),'./data/test')
+    test_data_path = os.path.join(os.getcwd(),'./static/test/')
     image_paths = [os.path.join(test_data_path, name) for name in os.listdir(test_data_path) if name[-4] == '.']
     img_list = [Image.open(image) for image in image_paths]  
     res = ""
     results = ""
+    result = {}
+    list2 = []
     for image in img_list:
             caption = generate_caption(image, model )
             res = res+caption+'\n'
             results = res.replace('\n', '<br>')
-    return render_template('view.html', result=results)
+            list2 = results.split('<br>')  
+    list1  = os.listdir('static/test/')
+    result = dict(zip(list1, list2))
+    print(result)
+    return render_template('view.html',result=result )
+
 
 @app.route('/project/')
 def project():
     model = load_checkpoint(argparse.Namespace(ccm=False, clip_length=10, coco=False, conceptual=True, live='l', prefix_length=10, prefix_size=512, pretrained=False, project=True, transformer=False))
 #   caption_from_device(m)
-    test_data_path = os.path.join(os.getcwd(),'./data/test')
+    test_data_path = os.path.join(os.getcwd(),'./static/test')
     image_paths = [os.path.join(test_data_path, name) for name in os.listdir(test_data_path) if name[-4] == '.']
     img_list = [Image.open(image) for image in image_paths]  
     res = ""
     results = ""
+    result = {}
+    list2 = []
     for image in img_list:
             caption = generate_caption(image, model )
             res = res+caption+'\n'
             results = res.replace('\n', '<br>')
-    return render_template('view.html', result=results)
+            list2 = results.split('<br>')  
+    list1  = os.listdir('static/test/')
+    result = dict(zip(list1, list2))
+    print(result)
+    return render_template('view.html',result=result )
+
 
 # Run a_eye.py --project --conceptual
 @app.route('/live/')

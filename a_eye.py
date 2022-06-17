@@ -18,7 +18,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
 clip_model, preprocess = clip.load('ViT-B/32', device=device)
 
-os.path.join(os.path.join(os.getcwd(),'data'), 'test')
+os.path.join(os.path.join(os.getcwd(),'static'), 'test')
 
 WEIGHTS_PATHS = {
 'project_conceptual': Path('data/project_weights'),
@@ -51,14 +51,16 @@ def read_caption(caption):
         wav_obj.play().wait_done()
         print("--- %s seconds to read the generated captions ---" % (time.time() - start_time))
 
+
 def caption_from_device (model):
         start_time = time.time()
-        test_data_path = Path('data/test')
+        test_data_path = Path('static/test')
 
         image_paths = [os.path.join(test_data_path, name) for name in os.listdir(test_data_path) if name[-4] == '.']
         img_list = [Image.open(image) for image in image_paths]    
         for image in img_list:
                 caption = generate_caption(image, model )
+                print(caption)
         print("--- %s overal time ---" % (time.time() - start_time))
        
 def screen():
