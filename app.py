@@ -37,7 +37,6 @@ def pretrained():
             list2 = results.split('<br>')  
     list1  = os.listdir('static/test/')
     result = dict(zip(list1, list2))
-    print(result)
     return render_template('view.html',result=result )
 
 
