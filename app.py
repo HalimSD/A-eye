@@ -10,6 +10,7 @@ app = Flask(__name__)
 app.secret_key="123"
 
 app.config["IMAGE_UPLOADS"] = "./static/test"
+app.config["ALLOWED_IMAGE_EXTENSIONS"] = "PNG"
 
 con=sqlite3.connect("database.db")
 con.execute("create table if not exists user(pid integer primary key,name text,mail text)")
@@ -92,25 +93,28 @@ def login():
 def user():
     return render_template("user.html")
 
+
+def allowed_image(filename):
+    if not "." in filename:
+        return False
+    ext = filename.rsplit(".",1)[1]
+    if ext.upper() in app.config["ALLOWED_IMAGE_EXTENSIONS"]:
+        return True
+    else:
+        return False
 @app.route('/upload',methods=["GET","POST"])
 def upload_image():
 	if request.method == "POST":
 		image = request.files['file']
 
-		if image.filename == '':
-			print("Image must have a file name")
+		if not allowed_image(image.filename):
+			print("Sorry, but only png extension is allowed. Please change the format")
 			return redirect(url_for("user"))
-
-
 		filename = secure_filename(image.filename)
-
 		basedir = os.path.abspath(os.path.dirname(__file__))
 		image.save(os.path.join(basedir,app.config["IMAGE_UPLOADS"],filename))
-
-		return render_template('user.html',filename=filename)
-
-
-
+        
+		return redirect('/pretrained')
 	return render_template('user.html')
 
 
