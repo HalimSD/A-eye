@@ -1,4 +1,4 @@
-from flask import Blueprint, redirect, render_template , Flask, request, url_for , flash
+from flask import Blueprint, redirect, render_template , Flask, request, url_for , flash , Response
 from flask_login import login_required, current_user
 import argparse
 from matplotlib import image
@@ -34,19 +34,22 @@ def home():
     return render_template("home.html", user=current_user)
 
 @views.route('/upload/')
+@login_required
 def upload():
     model = a_eye.load_checkpoint(argparse.Namespace(ccm=False, clip_length=10, coco=False, conceptual=True, live='l', prefix_length=10, prefix_size=512, pretrained=False, project=True, transformer=False))
     image_caption = a_eye.caption_upload(model,request.args["path"])
     return render_template("upload.html", image_caption=image_caption, user=current_user)    
 
 @views.route('/from_folder/')
+@login_required
 def from_folder():
     model = a_eye.load_checkpoint(argparse.Namespace(ccm=False, clip_length=10, coco=False, conceptual=True, live='l', prefix_length=10, prefix_size=512, pretrained=False, project=True, transformer=False))
     image_caption = a_eye.caption_from_device(model)
     return render_template("from_folder.html", image_caption=image_caption, user=current_user)
 
 @views.route('/camera/')
+@login_required
 def camera():
     model = a_eye.load_checkpoint(argparse.Namespace(ccm=False, clip_length=10, coco=False, conceptual=True, live='l', prefix_length=10, prefix_size=512, pretrained=False, project=True, transformer=False))
     image_caption = a_eye.caption_live(model)
-    return render_template("camera.html", image_caption=image_caption, user=current_user)
+    return Response(image_caption, mimetype='multipart/x-mixed-replace; boundary=frame')

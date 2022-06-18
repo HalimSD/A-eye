@@ -67,8 +67,6 @@ def caption_from_device (model):
                     wv.write(audio_path, audio ,rate=hps.data.sampling_rate, sampwidth=1)
                 #list_caption[os.path.split(name)[1]] = caption
                 list_caption.append([os.path.split(name)[1],caption, audio_name]) 
-                print(list_caption)
-                
         print("--- %s overal time ---" % (time.time() - start_time))
         return list_caption
 
@@ -93,22 +91,23 @@ def screen():
     frame = PIL.Image.fromarray(frame)
     return frame
 
+# code source : https://github.com/NakulLakhotia/Live-Streaming-using-OpenCV-Flask 
 def caption_live(model):
-    cam = cv2.VideoCapture(0)
+    camera = cv2.VideoCapture(0) #0 for local webcam
     while True:
-        x, frame = cam.read()
-        #print(x, frame)
-        cv2.imshow('video', frame)
-        keypress = cv2.waitKey(1000)
-        if keypress & 0xFF != ord('q'):
+        # Capture frame-by-frame
+        success, frame = camera.read()  # read the camera frame
+        if not success:
+            break
+        else :
             pil_image = PIL.Image.fromarray(frame)
             caption = generate_caption(pil_image, model)
-            print(caption)
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            cv2.putText(frame, caption, (10,450), font, 0.5, (31, 31, 193), 2, cv2.LINE_AA)
             read_caption(caption)
-        elif keypress & 0xFF == ord('q'):
-            break
-    cam.release()
-    cv2.destroyAllWindows()
+            ret, buffer = cv2.imencode('.jpg', frame)
+            frame = buffer.tobytes()
+            yield (b'--frame\r\n'b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')  # concat frame one by one and show result
 
 WEIGHTS_PATHS = {
 'project_conceptual': 'data/conceptual_200k_data_parsed',
