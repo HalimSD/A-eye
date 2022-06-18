@@ -114,7 +114,7 @@ def upload_image():
 		basedir = os.path.abspath(os.path.dirname(__file__))
 		image.save(os.path.join(basedir,app.config["IMAGE_UPLOADS"],filename))
         
-		return redirect('/pretrained')
+		return redirect('/project')
 	return render_template('user.html')
 
 
