@@ -23,18 +23,25 @@
 </style>
 <body>
     <div class="container-fluid">
-        {% for key, value in result.items() %}
+        {% for image in result %}
 
         <div class="row">
             <div class="col-12 mt-3">
                 <div class="card">
                     <div class="card-horizontal">
                         <div class="img-square-wrapper">
-                            <img style="height: 300px; width: 300px; " class="card-img-top" src="{{ url_for('static', filename='test/' + key) }}" alt="Card image cap">
+                            <img style="height: 300px; width: 300px; " class="card-img-top" src="{{ url_for('static', filename='test/' + image[0]) }}" alt="Card image cap">
                         </div>
                         <div class="card-body">
-                            <h3 class="card-title">Caption</h3>
-                            <p class="card-text">{{value}}</p>
+                            <div>
+                                <h3 class="card-title">Caption</h3>
+                                <p class="card-text">{{image[1]}}</p>
+                            </div>
+                            <div>
+                                <audio controls>
+                                  <source src="{{ url_for('static', filename='wav/' + image[2]) }}"  type="audio/wav" style="width: 600px;">
+                                </audio>
+                              </div>
                         </div>
                     </div>
                 </div>

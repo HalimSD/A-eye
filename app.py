@@ -1,9 +1,12 @@
 import time
 import cv2
+import torch
+import wavio as wv
 from flask import Flask, Response, render_template,request,flash,redirect,url_for,session
 import sqlite3
 import argparse
 from a_eye import Image, caption_live, caption_from_device, generate_caption, load_checkpoint,os
+from utils.clip_synthesized import hps, get_text, net_g
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -25,42 +28,43 @@ def pretrained():
     model = load_checkpoint(argparse.Namespace(ccm=False, clip_length=10, coco=False, conceptual=True, live='l', prefix_length=10, prefix_size=512, pretrained=True, project=False, transformer=False))
 #   caption_from_device(m)
     test_data_path = os.path.join(os.getcwd(),'./static/test/')
-    image_paths = [os.path.join(test_data_path, name) for name in os.listdir(test_data_path) if name[-4] == '.']
-    img_list = [Image.open(image) for image in image_paths]  
-    res = ""
-    results = ""
-    result = {}
-    list2 = []
-    for image in img_list:
-            caption = generate_caption(image, model )
-            res = res+caption+'\n'
-            results = res.replace('\n', '<br>')
-            list2 = results.split('<br>')  
-    list1  = os.listdir('static/test/')
-    result = dict(zip(list1, list2))
-    return render_template('view.html',result=result )
+    wav_data_path = os.path.join(os.getcwd(),'./static/wav/')
+    image_names = [name for name in os.listdir(test_data_path) if name[-4] == '.']
+    results = []
+    for image in image_names:
+            caption = generate_caption(Image.open(os.path.join(test_data_path, image)), model )
+            with torch.no_grad():
+                stn_tst = get_text(caption, hps)
+                x_tst = stn_tst.unsqueeze(0)
+                x_tst_lengths = torch.LongTensor([stn_tst.size(0)])
+                audio = net_g.infer(x_tst, x_tst_lengths, noise_scale=.667, noise_scale_w=0.8, length_scale=1)[0][0,0].data.float().numpy()
+                wav_name = image.rsplit(".",1)[0] +'.wav'
+                print(wav_name)
+                wv.write(os.path.join(wav_data_path, wav_name), audio ,rate=hps.data.sampling_rate, sampwidth=1)
+            results.append([image,caption, wav_name])
+    return render_template('view.html',result=results)
 
 
 @app.route('/project/')
 def project():
     model = load_checkpoint(argparse.Namespace(ccm=False, clip_length=10, coco=False, conceptual=True, live='l', prefix_length=10, prefix_size=512, pretrained=False, project=True, transformer=False))
 #   caption_from_device(m)
-    test_data_path = os.path.join(os.getcwd(),'./static/test')
-    image_paths = [os.path.join(test_data_path, name) for name in os.listdir(test_data_path) if name[-4] == '.']
-    img_list = [Image.open(image) for image in image_paths]  
-    res = ""
-    results = ""
-    result = {}
-    list2 = []
-    for image in img_list:
-            caption = generate_caption(image, model )
-            res = res+caption+'\n'
-            results = res.replace('\n', '<br>')
-            list2 = results.split('<br>')  
-    list1  = os.listdir('static/test/')
-    result = dict(zip(list1, list2))
-    print(result)
-    return render_template('view.html',result=result )
+    test_data_path = os.path.join(os.getcwd(),'./static/test/')
+    wav_data_path = os.path.join(os.getcwd(),'./static/wav/')
+    image_names = [name for name in os.listdir(test_data_path) if name[-4] == '.']
+    results = []
+    for image in image_names:
+            caption = generate_caption(Image.open(os.path.join(test_data_path, image)), model )
+            with torch.no_grad():
+                stn_tst = get_text(caption, hps)
+                x_tst = stn_tst.unsqueeze(0)
+                x_tst_lengths = torch.LongTensor([stn_tst.size(0)])
+                audio = net_g.infer(x_tst, x_tst_lengths, noise_scale=.667, noise_scale_w=0.8, length_scale=1)[0][0,0].data.float().numpy()
+                wav_name = image.rsplit(".",1)[0] +'.wav'
+                print(wav_name)
+                wv.write(os.path.join(wav_data_path, wav_name), audio ,rate=hps.data.sampling_rate, sampwidth=1)
+            results.append([image,caption, wav_name])
+    return render_template('view.html',result=results)
 
 
 # Run a_eye.py --project --conceptual
