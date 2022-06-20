@@ -1,20 +1,30 @@
 {% extends "base.html" %} {% block title %}Home{% endblock %} {% block content%}
-<div class="container">
-    <div class="row mt-4">
-      <div class="col-sm-6 d-flex justify-content-center">
-        <div class="card">
-          <img class="card-img-top" src="/static/{{image_caption[1]}}" alt="caption">
-          <div class="card-body">
-            <h5 class="card-title">caption predicted : </h5>
-            <p class="card-text">{{image_caption[0]}}</p>
-          </div>
-          <div>
-            <audio controls>
-              <source src="/static/{{image_caption[2]}}"type="audio/wav" style="width: 600px;">
-            </audio>
-          </div>
+<div class="row">
+  <div>
+    <h4 class="mb-2">Caption predicted for the uploaded image using the project and the pretrained conceptual model</h4>
+  </div>
+    <div>
+      <div class="card col-md-6">
+        <img class="card-img-top" src="/static/images/{{image_caption[1]}}" alt="caption">
+        <div class="card-body">
+          <h5 class="card-title">caption predicted (project wieghts) </h5>
+          <p class="card-text">{{image_caption[0]}}</p>
         </div>
-      </div> 
+        <div>
+          <audio controls style="width: 100%; max-width: 600px;">
+            <source src="/static/wav/{{image_caption[2]}}"type="audio/wav" style="width: 600px;">
+          </audio>
+        </div>
+        <div class="card-body">
+          <h5 class="card-title">caption predicted (pretrained wieghts) </h5>
+          <p class="card-text">{{image_caption_pretrained[0]}}</p>
+        </div>
+        <div>
+          <audio controls style="width: 100%; max-width: 600px;">
+            <source src="/static/pretraind_wav/{{image_caption_pretrained[2]}}"type="audio/wav" style="width: 600px;">
+          </audio>
+        </div>
+      </div>
     </div>
   </div>
 {% endblock %}

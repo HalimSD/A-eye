@@ -1,22 +1,26 @@
 {% extends "base.html" %} {% block title %}Home{% endblock %} {% block content%}
 
 <div class="container">
+  <div>
+    <h3>you see here the predicted caption with the generated voice for the images in the images folder. 
+      The model used for the predicting is the {{name_model}} conceptual model. To test the model with your own images go back to the home page.</h3>
+  </div>
   <div class="row mt-4">
     {% for image in image_caption %}
-    <div class="col-sm-3">
-      <div class="card">
-        <img class="card-img-top" src="/static/{{image[0]}}" alt="caption">
-        <div class="card-body">
-          <h5 class="card-title">caption predicted : </h5>
-          <p class="card-text">{{image[1]}}</p>
+      <div class="col-sm-3 d-flex">
+        <div class="card">
+          <img class="card-img-top" src="/static/images/{{image[0]}}" alt="caption" style="width: 100%; height:15vw; object-fit:cover;">
+          <div class="card-body">
+            <h3 class="card-title">caption predicted </h3>
+            <p class="card-text">{{image[1]}}</p>
+          </div>
+          <div>
+            <audio controls style="width: 100%; max-width: 600px;">
+            <source src="/static/wav/{{image[2]}}" type="audio/wav">
+            </audio>
         </div>
-        <div>
-          <audio controls>
-            <source src="/static/{{image[2]}}"type="audio/wav" style="width: 600px;">
-          </audio>
-        </div>
-      </div>
-    </div> 
+      </div> 
+    </div>
   {% endfor %}
   </div>
 </div>

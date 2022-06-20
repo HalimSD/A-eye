@@ -4,20 +4,28 @@
     <form class="needs-validation" method="post">
         <div class="custom-control custom-radio">
             <input type="radio" id="customRadio1" value="cameracon" name="parms" class="custom-control-input">
-            <label class="custom-control-label" for="customRadio1">Camera + conceptual</label>
+            <label class="custom-control-label" for="customRadio1">Camera + conceptual (project)</label>
+        </div>
+        <div class="custom-control custom-radio">
+            <input type="radio" id="customRadio4" value="cameraconpretrained" name="parms" class="custom-control-input">
+            <label class="custom-control-label" for="customRadio4">Camera + conceptual (pretrained)</label>
         </div>
         <div class="custom-control custom-radio">
             <input type="radio" id="customRadio3" value="localcon" name="parms" class="custom-control-input">
-            <label class="custom-control-label" for="customRadio3">Local folder + conceptual</label>
+            <label class="custom-control-label" for="customRadio3">Local folder + conceptual (project)</label>
         </div>
-        <button class="btn btn-primary" type="submit">Submit</button>
+        <div class="custom-control custom-radio">
+            <input type="radio" id="customRadio2" value="localconpretrained" name="parms" class="custom-control-input">
+            <label class="custom-control-label" for="customRadio2">Local folder + conceptual (pretrained)</label>
+        </div>
+        <button class="btn btn-primary mt-3 mb-3" type="submit">Submit</button>
     </form>
 </div>
 <div class="mt-2" style="width: 26.5em;margin:0 auto;">
-    <h1>Or upload a new image</h1>
-    <form action="" method=post enctype=multipart/form-data>
+    <h3>Or upload a new image to get the caption prediction using both project and pretrained conceptual model</h3>
+    <form action="" class="mt-4" method=post enctype=multipart/form-data>
         <input type=file value="upload"  name=file>
-        <input type=submit name=file value=upload>
+        <input class="btn btn-info" type=submit name=file value=upload>
     </form>
 </div>
     {% endblock %}

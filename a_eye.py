@@ -16,7 +16,7 @@ from transformers import GPT2Tokenizer
 from utils.clip_synthesized import ClipCaptionModel, generate2, hps, net_g, get_text
 from train import ClipCaptionPrefix as transformerClipCaptionPrefix
 from utils import utils
-import shutil
+from pathlib import Path
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -50,27 +50,24 @@ def read_caption(caption):
 
 def caption_from_device (model):
         start_time = time.time()
-        test_data_path = os.path.join(os.getcwd(),'data/conceptual/test')
-        image_paths = [os.path.join(test_data_path, name) for name in os.listdir(test_data_path) if name[-4] == '.']
-        #img_list = [Image.open(image) for image in image_paths] 
+        test_data_path = os.path.join(os.getcwd(),'./login/static/images')
+        image_names = [name for name in os.listdir(test_data_path) if name[-4] == '.']
+        wav_data_path = os.path.join(os.getcwd(),'./login/static/wav/')
         list_caption = []
-        for name in image_paths:
-                caption = generate_caption(Image.open(name), model )
-                shutil.copy2(name,os.path.join(os.getcwd(),'login/static'))
+        for image in image_names:
+                caption = generate_caption(Image.open(os.path.join(test_data_path, image)), model )
                 with torch.no_grad():
                     stn_tst = get_text(caption, hps)
                     x_tst = stn_tst.unsqueeze(0)
                     x_tst_lengths = torch.LongTensor([stn_tst.size(0)])
                     audio = net_g.infer(x_tst, x_tst_lengths, noise_scale=.667, noise_scale_w=0.8, length_scale=1)[0][0,0].data.float().numpy()
-                    audio_name = os.path.splitext(os.path.basename(name))[0]+'.wav'
-                    audio_path = os.path.join(os.path.join(os.getcwd(),'login/static'), audio_name)
-                    wv.write(audio_path, audio ,rate=hps.data.sampling_rate, sampwidth=1)
-                #list_caption[os.path.split(name)[1]] = caption
-                list_caption.append([os.path.split(name)[1],caption, audio_name]) 
+                    wav_name = image.rsplit(".",1)[0] +'.wav'
+                    wv.write(os.path.join(wav_data_path, wav_name), audio ,rate=hps.data.sampling_rate, sampwidth=1)
+                list_caption.append([image,caption, wav_name]) 
         print("--- %s overal time ---" % (time.time() - start_time))
         return list_caption
 
-def caption_upload (model, path):
+def caption_upload (model, path, pretrained):
         image_name = os.path.basename(path)
         if image_name[-4] == '.' :
             caption = generate_caption(Image.open(path), model)
@@ -79,8 +76,10 @@ def caption_upload (model, path):
                 x_tst = stn_tst.unsqueeze(0)
                 x_tst_lengths = torch.LongTensor([stn_tst.size(0)])
                 audio = net_g.infer(x_tst, x_tst_lengths, noise_scale=.667, noise_scale_w=0.8, length_scale=1)[0][0,0].data.float().numpy()
-                audio_path = os.path.splitext(path)[0]+'.wav'
-                print(audio_path)
+                wav_name = os.path.basename(path.rsplit(".",1)[0] +'.wav')
+                audio_path = os.path.join(os.path.join(os.getcwd(),'./login/static/wav/'),wav_name)
+                if pretrained :
+                    audio_path = os.path.join(os.path.join(os.getcwd(),'./login/static/pretraind_wav/'),wav_name)
                 wv.write(audio_path, audio ,rate=hps.data.sampling_rate, sampwidth=1)
             list_caption = [caption,image_name, os.path.basename(audio_path)]
         return list_caption
@@ -109,15 +108,14 @@ def caption_live(model):
             frame = buffer.tobytes()
             yield (b'--frame\r\n'b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')  # concat frame one by one and show result
 
+
 WEIGHTS_PATHS = {
-'project_conceptual': 'data/conceptual_200k_data_parsed',
-'pretrained_conceptual': 'wandb/pretrained_models/',
+'project_conceptual': Path('data/project_weights'),
+'pretrained_conceptual': Path('data/pretrained_weights')
 }
 
 def last_model (args: argparse.Namespace):
-    if args.project and args.coco:
-        model_path = WEIGHTS_PATHS.get('project_conceptual')
-    elif args.project and args.conceptual:
+    if args.project and args.conceptual:
         model_path = WEIGHTS_PATHS.get('project_conceptual')
         list_models_path = os.listdir(model_path)
         weights_list = []
@@ -129,11 +127,7 @@ def last_model (args: argparse.Namespace):
         return latest_model
     elif args.pretrained and args.conceptual:
         model_path = WEIGHTS_PATHS.get('pretrained_conceptual')
-    elif args.pretrained and args.coco and args.transformer:
-        model_path = WEIGHTS_PATHS.get('pretrained_coco_transformer')
-    elif args.pretrained and args.coco:
-        model_path = WEIGHTS_PATHS.get('pretrained_coco')
-   
+        return model_path 
     else:
         assert 'Arguments are not complete'
     
@@ -142,6 +136,29 @@ def load_checkpoint(args: argparse.Namespace):
     latest_model = last_model(args)
   
     if args.project and args.conceptual:
+        print('LOADING: Conceptual Project')
+        checkpoint = torch.load(latest_model , map_location='cpu')
+        model = ClipCaptionModel(args.prefix_length, args.prefix_size)
+        model.load_state_dict(checkpoint)
+        model.eval()
+        model.to(device=device)
+        return model  
+
+    elif args.pretrained and args.conceptual:
+        print('LOADING: Conceptual Pretrained')
+        checkpoint = torch.load(latest_model, map_location=device)
+        model = ClipCaptionModel(prefix_length = 10, prefix_size = 512)
+        model.load_state_dict(checkpoint)
+        model.eval()
+        model.to(device=device)
+        return model  
+    
+
+def load_checkpoint(args: argparse.Namespace):
+    latest_model = last_model(args)
+  
+    if args.project and args.conceptual:
+        print('Conceptual project model')
         checkpoint = torch.load(latest_model , map_location='cpu')
         model = transformerClipCaptionPrefix(args.prefix_length, args.prefix_size)
         model.load_state_dict(checkpoint)
