@@ -13,7 +13,7 @@ app = Flask(__name__)
 app.secret_key="123"
 
 app.config["IMAGE_UPLOADS"] = "./static/test"
-app.config["ALLOWED_IMAGE_EXTENSIONS"] = "PNG"
+app.config["ALLOWED_IMAGE_EXTENSIONS"] = ["PNG","JPG"]
 
 con=sqlite3.connect("database.db")
 con.execute("create table if not exists user(pid integer primary key,name text,mail text)")
